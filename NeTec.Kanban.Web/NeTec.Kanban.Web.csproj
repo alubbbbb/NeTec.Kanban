@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\NeTec.Kanban.Application\NeTec.Kanban.Application.csproj" />
     <ProjectReference Include="..\NeTec.Kanban.Domain\NeTec.Kanban.Domain.csproj" />
     <ProjectReference Include="..\NeTec.Kanban.Infrastructure\NeTec.Kanban.Infrastructure.csproj" />
