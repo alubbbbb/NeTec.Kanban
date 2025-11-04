@@ -1,29 +1,50 @@
-﻿using System.Xml.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace NeTec.Kanban.Domain.Entities;
-
-public class TaskItem
+namespace NeTec.Kanban.Domain.Entities
 {
-    public int TaskItemID { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public int Priority { get; set; } // z.B. 1=Hoch, 2=Mittel, 3=Niedrig
-    public decimal? EstimatedHours { get; set; }
-    public decimal? RemainingHours { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public class TaskItem
+    {
+        [Key]
+        public int Id { get; set; }
 
-    // Navigation Property: Ein Task gehört zu einer Spalte
-    public int ColumnID { get; set; }
-    public Column? Column { get; set; }
+        [Required]
+        public int ColumnId { get; set; }
 
-    // Navigation Property: Ein Task ist einem User zugewiesen
-    public string UserId { get; set; } = string.Empty;
-    public ApplicationUser? User { get; set; }
+        public string? UserId { get; set; }
 
-    // Navigation Property: Ein Task hat viele Kommentare
-    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+        [Required]
+        [StringLength(150)]
+        public string Title { get; set; } = null!;
 
-    // Navigation Property: Ein Task hat viele Zeiteinträge
-    public ICollection<TimeTracking> TimeTrackings { get; set; } = new List<TimeTracking>();
+        [StringLength(1000)]
+        public string? Description { get; set; }
+
+        [StringLength(20)]
+        public string Priority { get; set; } = "Medium"; 
+
+        [Column(TypeName = "decimal(8,2)")]
+        public decimal? EstimatedHours { get; set; }
+
+        [Column(TypeName = "decimal(8,2)")]
+        public decimal? RemainingHours { get; set; }
+
+        [DataType(DataType.DateTime)]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [DataType(DataType.DateTime)]
+        public DateTime? UpdatedAt { get; set; }
+
+        // Navigation
+        [ForeignKey(nameof(ColumnId))]
+        public Column? Column { get; set; }
+
+        [ForeignKey(nameof(UserId))]
+        public ApplicationUser? AssignedTo { get; set; }
+
+        public ICollection<Comment>? Comments { get; set; }
+        public ICollection<TimeTracking>? TimeTrackings { get; set; }
+    }
 }

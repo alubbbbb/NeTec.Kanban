@@ -1,15 +1,27 @@
-﻿namespace NeTec.Kanban.Domain.Entities;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-public class Column
+namespace NeTec.Kanban.Domain.Entities
 {
-    public int ColumnID { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public int OrderIndex { get; set; }
+    public class Column
+    {
+        [Key]
+        public int Id { get; set; }
 
-    // Navigation Property: Eine Spalte gehört zu einem Board
-    public int BoardID { get; set; }
-    public Board? Board { get; set; }
+        [Required]
+        public int BoardId { get; set; }
 
-    // Navigation Property: Eine Spalte hat viele Tasks
-    public ICollection<TaskItem> Tasks { get; set; } = new List<TaskItem>();
+        [Required]
+        [StringLength(100)]
+        public string Name { get; set; } = null!;
+
+        public int OrderIndex { get; set; } = 0;
+
+        // Navigation
+        [ForeignKey(nameof(BoardId))]
+        public Board? Board { get; set; }
+
+        public ICollection<TaskItem>? Tasks { get; set; }
+    }
 }

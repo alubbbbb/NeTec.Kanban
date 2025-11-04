@@ -1,11 +1,25 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
 
-namespace NeTec.Kanban.Domain.Entities;
-
-public class ApplicationUser : IdentityUser
+namespace NeTec.Kanban.Domain.Entities
 {
-    // Hier können wir später benutzerspezifische Eigenschaften hinzufügen,
-    // die IdentityUser nicht von Haus aus hat.
-    // z.B. public string? FirstName { get; set; }
-    // z.B. public string? LastName { get; set; }
+    
+    public class ApplicationUser : IdentityUser
+    {
+        [StringLength(100)]
+        public string? FullName { get; set; }
+
+        [DataType(DataType.DateTime)]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [DataType(DataType.DateTime)]
+        public DateTime? UpdatedAt { get; set; }
+
+        public ICollection<Board>? Boards { get; set; }
+        public ICollection<TaskItem>? AssignedTasks { get; set; }
+        public ICollection<Comment>? Comments { get; set; }
+        public ICollection<TimeTracking>? TimeTrackings { get; set; }
+    }
 }

@@ -1,17 +1,34 @@
-﻿namespace NeTec.Kanban.Domain.Entities;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-public class TimeTracking
+namespace NeTec.Kanban.Domain.Entities
 {
-    public int TimeTrackingID { get; set; }
-    public decimal HoursSpent { get; set; }
-    public string? Description { get; set; }
-    public DateTime LoggedAt { get; set; } = DateTime.UtcNow;
+    public class TimeTracking
+    {
+        [Key]
+        public int Id { get; set; }
 
-    // Navigation Property: Ein Zeiteintrag gehört zu einem Task
-    public int TaskItemID { get; set; }
-    public TaskItem? TaskItem { get; set; }
+        [Required]
+        public int TaskItemId { get; set; }
 
-    // Navigation Property: Ein Zeiteintrag wurde von einem User erfasst
-    public string UserId { get; set; } = string.Empty;
-    public ApplicationUser? User { get; set; }
+        [Required]
+        public string UserId { get; set; } = null!;
+
+        [Column(TypeName = "decimal(8,2)")]
+        public decimal HoursSpent { get; set; }
+
+        [StringLength(255)]
+        public string? Description { get; set; }
+
+        [DataType(DataType.DateTime)]
+        public DateTime LoggedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation
+        [ForeignKey(nameof(TaskItemId))]
+        public TaskItem? TaskItem { get; set; }
+
+        [ForeignKey(nameof(UserId))]
+        public ApplicationUser? User { get; set; }
+    }
 }
