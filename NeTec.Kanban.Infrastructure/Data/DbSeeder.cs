@@ -50,14 +50,14 @@ namespace NeTec.Kanban.Infrastructure.Data
             // 3) Demo‑Boards anlegen, falls keine vorhanden sind
             if (!await context.Boards.AnyAsync())
             {
-                var demoBoard = new Board { UserId = admin.Id, Name = "Demo Board", Description = "Beispiel-Board für Demozwecke" };
+                var demoBoard = new Board { UserId = admin.Id, Titel = "Demo Board", Description = "Beispiel-Board für Demozwecke" };
                 context.Boards.Add(demoBoard);
                 await context.SaveChangesAsync();
 
                 // Beispielspalten mit BoardId setzen
-                context.Columns.Add(new Column { BoardId = demoBoard.Id, Name = "Backlog", OrderIndex = 0 });
-                context.Columns.Add(new Column { BoardId = demoBoard.Id, Name = "In Progress", OrderIndex = 1 });
-                context.Columns.Add(new Column { BoardId = demoBoard.Id, Name = "Done", OrderIndex = 2 });
+                context.Columns.Add(new Column { BoardId = demoBoard.Id, Titel = "Backlog", OrderIndex = 0 });
+                context.Columns.Add(new Column { BoardId = demoBoard.Id, Titel = "In Progress", OrderIndex = 1 });
+                context.Columns.Add(new Column { BoardId = demoBoard.Id, Titel = "Done", OrderIndex = 2 });
                 await context.SaveChangesAsync();
             }
         }
