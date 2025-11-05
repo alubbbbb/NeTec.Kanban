@@ -1,16 +1,32 @@
-﻿namespace NeTec.Kanban.Domain.Entities;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-public class Comment
+namespace NeTec.Kanban.Domain.Entities
 {
-    public int CommentID { get; set; }
-    public string Content { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public class Comment
+    {
+        [Key]
+        public int Id { get; set; }
 
-    // Navigation Property: Ein Kommentar gehört zu einem Task
-    public int TaskItemID { get; set; }
-    public TaskItem? TaskItem { get; set; }
+        [Required]
+        public int TaskItemId { get; set; }
 
-    // Navigation Property: Ein Kommentar wurde von einem User verfasst
-    public string UserId { get; set; } = string.Empty;
-    public ApplicationUser? User { get; set; }
+        [Required]
+        public string UserId { get; set; } = null!;
+
+        [Required]
+        [StringLength(1000)]
+        public string Content { get; set; } = null!;
+
+        [DataType(DataType.DateTime)]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation
+        [ForeignKey(nameof(TaskItemId))]
+        public TaskItem? TaskItem { get; set; }
+
+        [ForeignKey(nameof(UserId))]
+        public ApplicationUser? User { get; set; }
+    }
 }

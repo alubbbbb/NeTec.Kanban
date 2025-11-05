@@ -1,57 +1,90 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using NeTec.Kanban.Domain.Entities;
 
-namespace NeTec.Kanban.Infrastructure.Data;
-
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+namespace NeTec.Kanban.Infrastructure.Data
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options)
+    // IdentityDbContext<ApplicationUser> (string keys) — einfache Standard-Variante
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
-    }
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options) { }
 
-    // Hier registrieren wir unsere eigenen Entitäten als Tabellen
-    public DbSet<Board> Boards { get; set; }
-    public DbSet<Column> Columns { get; set; }
-    public DbSet<TaskItem> TaskItems { get; set; }
-    public DbSet<Comment> Comments { get; set; }
-    public DbSet<TimeTracking> TimeTrackings { get; set; }
+        public DbSet<Board> Boards { get; set; } = null!;
+        public DbSet<Column> Columns { get; set; } = null!;
+        public DbSet<TaskItem> TaskItems { get; set; } = null!;
+        public DbSet<Comment> Comments { get; set; } = null!;
+        public DbSet<TimeTracking> TimeTrackings { get; set; } = null!;
 
-    protected override void OnModelCreating(ModelBuilder builder)
-    {
-        base.OnModelCreating(builder);
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
 
-        builder.Entity<TaskItem>()
-         .HasOne(t => t.User)
-         .WithMany()
-         .HasForeignKey(t => t.UserId)
-         .OnDelete(DeleteBehavior.Restrict);
+            // ---- Identity column sizing (entspricht deinem ERD-Anforderungsrahmen) ----
+            builder.Entity<ApplicationUser>(b =>
+            {
+                b.Property(u => u.UserName).HasMaxLength(100);
+                b.Property(u => u.Email).HasMaxLength(150);
+                b.Property(u => u.PasswordHash).HasMaxLength(255);
+            });
 
-        // Beziehung: Comment -> User
-        builder.Entity<Comment>()
-            .HasOne(c => c.User)
-            .WithMany()
-            .HasForeignKey(c => c.UserId)
-            .OnDelete(DeleteBehavior.Restrict); // Geändert zu Restrict für Konsistenz
+            builder.Entity<IdentityRole>(b =>
+            {
+                b.Property(r => r.Name).HasMaxLength(50);
+                b.Property(r => r.NormalizedName).HasMaxLength(50);
+            });
 
-        // Beziehung: TimeTracking -> User (DIE NEUE, FINALE KORREKTUR)
-        builder.Entity<TimeTracking>()
-            .HasOne(tt => tt.User)
-            .WithMany()
-            .HasForeignKey(tt => tt.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
+            // ---- Decimal precision ----
+            builder.Entity<TaskItem>()
+                .Property(t => t.EstimatedHours)
+                .HasColumnType("decimal(8,2)");
 
-        builder.Entity<TaskItem>()
-            .Property(t => t.EstimatedHours)
-            .HasColumnType("decimal(18,2)");
+            builder.Entity<TaskItem>()
+                .Property(t => t.RemainingHours)
+                .HasColumnType("decimal(8,2)");
 
-        builder.Entity<TaskItem>()
-            .Property(t => t.RemainingHours)
-            .HasColumnType("decimal(18,2)");
+            builder.Entity<TimeTracking>()
+                .Property(tt => tt.HoursSpent)
+                .HasColumnType("decimal(8,2)");
 
-        builder.Entity<TimeTracking>()
-            .Property(tt => tt.HoursSpent)
-            .HasColumnType("decimal(18,2)");
+            // ---- Relationships & delete behavior ----
+            builder.Entity<Board>()
+                .HasMany(b => b.Columns)
+                .WithOne(c => c.Board)
+                .HasForeignKey(c => c.BoardId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Column>()
+                .HasMany(c => c.Tasks)
+                .WithOne(t => t.Column)
+                .HasForeignKey(t => t.ColumnId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<TaskItem>()
+                .HasMany(t => t.Comments)
+                .WithOne(c => c.TaskItem)
+                .HasForeignKey(c => c.TaskItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Protect user-owned data on user deletion (restrict or set null)
+            builder.Entity<Board>()
+                .HasOne(b => b.User)
+                .WithMany(u => u.Boards)
+                .HasForeignKey(b => b.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<TaskItem>()
+                .HasOne(t => t.AssignedTo)
+                .WithMany(u => u.AssignedTasks)
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Ensure string FK lengths in DB (for our UserId fields)
+            builder.Entity<Board>().Property(b => b.UserId).HasMaxLength(450);
+            builder.Entity<TaskItem>().Property(t => t.UserId).HasMaxLength(450);
+            builder.Entity<Comment>().Property(c => c.UserId).HasMaxLength(450);
+            builder.Entity<TimeTracking>().Property(tt => tt.UserId).HasMaxLength(450);
+        }
     }
 }
