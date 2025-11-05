@@ -15,19 +15,22 @@ namespace NeTec.Kanban.Domain.Entities
 
         public string? UserId { get; set; }
 
-        [Required]
-        [StringLength(150)]
+        [Required(ErrorMessage = "Der Aufgaben-Titel ist erforderlich.")]
+        [StringLength(150, ErrorMessage = "Maximal 150 Zeichen.")]
         public string Title { get; set; } = null!;
 
-        [StringLength(1000)]
+        [StringLength(2000, ErrorMessage = "Maximal 2000 Zeichen.")]
         public string? Description { get; set; }
 
-        [StringLength(20)]
-        public string Priority { get; set; } = "Medium"; 
+        [Required(ErrorMessage = "Die Priorität ist erforderlich.")]
+        [StringLength(20, ErrorMessage = "Maximal 20 Zeichen.")]
+        public string Priority { get; set; } = "Medium";
 
+        [Range(0, 500, ErrorMessage = "Schätzwert muss zwischen 0 und 500 Stunden liegen.")]
         [Column(TypeName = "decimal(8,2)")]
         public decimal? EstimatedHours { get; set; }
 
+        [Range(0, 500, ErrorMessage = "Schätzwert muss zwischen 0 und 500 Stunden liegen.")]
         [Column(TypeName = "decimal(8,2)")]
         public decimal? RemainingHours { get; set; }
 
@@ -37,7 +40,6 @@ namespace NeTec.Kanban.Domain.Entities
         [DataType(DataType.DateTime)]
         public DateTime? UpdatedAt { get; set; }
 
-        // Navigation
         [ForeignKey(nameof(ColumnId))]
         public Column? Column { get; set; }
 

@@ -10,15 +10,14 @@ namespace NeTec.Kanban.Domain.Entities
         [Key]
         public int Id { get; set; }
 
-        // FK auf ApplicationUser (Owner) als string
-        [Required]
+        [Required] 
         public string UserId { get; set; } = null!;
 
-        [Required]
-        [StringLength(100)]
-        public string Name { get; set; } = null!;
+        [Required(ErrorMessage = "Der Board-Titel ist erforderlich.")]
+        [StringLength(100, ErrorMessage = "Maximal 100 Zeichen.")]
+        public string Titel { get; set; } = null!;
 
-        [StringLength(250)]
+        [StringLength(2000, ErrorMessage = "Maximal 2000 Zeichen für die Beschreibung.")]
         public string? Description { get; set; }
 
         [DataType(DataType.DateTime)]
@@ -27,7 +26,6 @@ namespace NeTec.Kanban.Domain.Entities
         [DataType(DataType.DateTime)]
         public DateTime? UpdatedAt { get; set; }
 
-        // Navigation
         [ForeignKey(nameof(UserId))]
         public ApplicationUser? User { get; set; }
 

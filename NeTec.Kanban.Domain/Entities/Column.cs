@@ -12,9 +12,9 @@ namespace NeTec.Kanban.Domain.Entities
         [Required]
         public int BoardId { get; set; }
 
-        [Required]
-        [StringLength(100)]
-        public string Name { get; set; } = null!;
+        [Required(ErrorMessage = "Der Spaltentitel ist erforderlich.")]
+        [StringLength(100, ErrorMessage = "Maximal 100 Zeichen.")]
+        public string Titel { get; set; } = null!;
 
         public int OrderIndex { get; set; } = 0;
 

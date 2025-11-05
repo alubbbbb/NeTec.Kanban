@@ -15,6 +15,7 @@ namespace NeTec.Kanban.Domain.Entities
         [Required]
         public string UserId { get; set; } = null!;
 
+        [Range(0.01, 500, ErrorMessage = "Mindestens 0.01 Stunden, maximal 500 Stunden.")]
         [Column(TypeName = "decimal(8,2)")]
         public decimal HoursSpent { get; set; }
 
