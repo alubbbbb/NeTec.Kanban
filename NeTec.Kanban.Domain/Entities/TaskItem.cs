@@ -48,5 +48,8 @@ namespace NeTec.Kanban.Domain.Entities
 
         public ICollection<Comment>? Comments { get; set; }
         public ICollection<TimeTracking>? TimeTrackings { get; set; }
+
+        // NEU: Drag & Drop Sortierreihenfolge innerhalb einer Spalte
+        public int OrderIndex { get; set; } = 0;
     }
 }

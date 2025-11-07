@@ -1,0 +1,58 @@
+﻿@model NeTec.Kanban.Domain.Entities.ViewModel.BoardCreateVM;
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neues Board erstellen</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        /* Stellt sicher, dass der Hintergrund wie in der Vorlage grau ist */
+        body {
+            background-color: #f4f5f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* Gestaltet das Formular wie eine schwebende Karte/Modal */
+        .create-card {
+            width: 100%;
+            max-width: 500px; /* Breite des Formulars */
+            border: 1px solid #dee2e6;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card create-card">
+        <div class="card-header bg-white py-3">
+            <h4 class="card-title mb-0">Dieses Board benennen</h4>
+        </div>
+        <div class="card-body p-4">
+
+            <form asp-action="Create" method="post">
+                @* Eingabefeld für den Board-Namen *@
+                <div class="mb-3">
+                    <label asp-for="BoardName" class="form-label fw-bold">Board-Name</label>
+                    <input asp-for="BoardName" class="form-control" />
+                    <span asp-validation-for="BoardName" class="text-danger small"></span>
+                </div>
+
+                @* Buttons am Ende des Formulars *@
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-secondary">Abbrechen</a>
+                    <button asp-action="Create" type="submit" class="btn btn-primary">Board erstellen</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</body>
+</html>
