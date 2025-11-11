@@ -1,59 +1,103 @@
-﻿@* Minimal Bootstrap Layout: Sticky Footer fix *@
-@{
-    Layout = null;
-}
-<!DOCTYPE html>
-<html lang="en">
+﻿<!DOCTYPE html>
+<html lang="de">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] NeTec Kanban-Board</title>
+    <title>@ViewData["Title"] - NeTec Kanban</title>
+    <!-- Bootstrap Core JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+    <!-- Toastr -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+
+
+    <!-- Bootstrap -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Google Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/NeTec.Kanban.Web.styles.css" asp-append-version="true" />
 </head>
-<body class="d-flex flex-column min-vh-100">
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Boards</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
-                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                @* Navigation & Login partial (optional) *@
-                @* <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Board" asp-action="Index">Boards</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                    <partial name="_LoginPartial" />
-                </div> *@
+<body>
+
+    <!-- ========================= HEADER ========================= -->
+    <header class="navbar navbar-light bg-white border-bottom shadow-sm px-3 py-2">
+        <div class="container-fluid d-flex align-items-center justify-content-between">
+
+            <!-- 🔹 Logo + Titel -->
+            <div class="d-flex align-items-center gap-2">
+                <a class="navbar-brand d-flex align-items-center" asp-controller="Board" asp-action="Index">
+                    <img src="~/img/logo.png" alt="NeTec Logo" class="logo-img" />
+                    <span class="ms-2 fw-semibold text-dark">NeTec Kanban</span>
+                </a>
+            </div>
+
+            <!-- 🔹 Benutzerbereich -->
+            @if (User.Identity.IsAuthenticated)
+            {
+                <div class="d-flex flex-column align-items-end">
+                    <form asp-action="Logout" method="post" class="m-0">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm mb-1">
+                            Logout
+                        </button>
+                    </form>
+                    <small class="text-muted">
+                        Eingeloggt als: @User.Identity.Name
+                    </small>
+                </div>
+            }
+            else
+            {
+                <div>
+                    <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-primary btn-sm">
+                        Login
+                    </a>
+                </div>
+            }
+        </div>
+    </header>
+    <!-- ========================================================== -->
+
+    <div class="d-flex">
+        <!-- ========================= SIDEBAR ========================= -->
+        <nav class="sidebar bg-white border-end">
+            <div class="p-3">
+                <div class="fw-bold fs-5 mb-3">NeTec</div>
+                <small class="text-uppercase text-muted fw-semibold ms-1 d-block mb-2" style="font-size:0.75rem;">
+                    Navigation
+                </small>
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link active" asp-controller="Board" asp-action="Index">Alle Boards</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="User" asp-action="Index">Benutzerverwaltung</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Settings" asp-action="Index">Einstellungen</a></li>
+                </ul>
             </div>
         </nav>
-    </header>
+        <!-- ========================================================== -->
+        <!-- ========================= MAIN ============================ -->
+        <main class="main-content flex-grow-1 p-4">
+            @RenderBody()
+        </main>
+        <!-- ========================================================== -->
+    </div>
 
-    <main role="main" class="container-fluid px-4 flex-grow-1">
-        @RenderBody()
-    </main>
-
-    <footer class="border-top footer text-muted mt-auto">
-        <div class="container-fluid px-4 py-2">
-            &copy; 2025 - NeTec.Kanban.Web -
-            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
+    <!-- ========================= FOOTER ========================= -->
+    <footer class="text-center py-3 mt-auto">
+        © @DateTime.Now.Year - NeTec Kanban WebApp | Version 1.0
+        <br />
+        <small class="text-muted">
+            Das verwendete NeTec-Logo dient ausschließlich Demonstrationszwecken im Rahmen des IHK-Abschlussprojekts.
+        </small>
     </footer>
+    <!-- ========================================================== -->
+    @RenderSection("Scripts", required: false)
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

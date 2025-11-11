@@ -1,37 +1,53 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using NeTec.Kanban.Domain.Entities;
 using NeTec.Kanban.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Connection string
+// ====================================================
+// 🔹 Datenbankverbindung
+// ====================================================
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
+// ====================================================
+// 🔹 Identity-Setup (mit Rollen & integrierter UI)
+// ====================================================
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
-    
 })
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+.AddRoles<IdentityRole>()
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultUI(); // <- Aktiviert die integrierte Login/Register-UI aus der Cloud
 
-// Razor Pages (Identity UI) + MVC
+// Login-Routing global festlegen
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Identity/Account/Login";
+    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+});
+
+// ====================================================
+// 🔹 MVC + Razor Pages
+// ====================================================
 builder.Services.AddRazorPages();
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// Pipeline
+// ====================================================
+// 🔹 Pipeline-Konfiguration
+// ====================================================
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 
-    // Simple seeding only in Development
+    // Optional: Datenbank-Seeding
     using (var scope = app.Services.CreateScope())
     {
         var services = scope.ServiceProvider;
@@ -57,11 +73,21 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// Auth middleware order is important
+// Auth Middleware muss in dieser Reihenfolge bleiben!
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}");
+// ====================================================
+// 🔹 Standardrouten
+// ====================================================
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Board}/{action=Index}/{id?}");
+
+// RazorPages für Identity aktivieren
 app.MapRazorPages();
 
+// ====================================================
+// 🔹 App starten
+// ====================================================
 app.Run();

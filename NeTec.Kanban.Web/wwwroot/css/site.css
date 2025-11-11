@@ -1,22 +1,175 @@
-html {
-  font-size: 14px;
-}
+﻿/* =============================
+   🌼 NeTec Kanban – Final Design
+   ============================= */
 
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
+/* ==== GLOBAL ==== */
 body {
-  margin-bottom: 60px;
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    color: #212529;
+}
+
+/* ==== SIDEBAR ==== */
+.sidebar {
+    background-color: #fff;
+    border-right: 1px solid #e6e6e6;
+    min-height: 100vh;
+    padding: 1rem 0;
+}
+
+    .sidebar .nav-link {
+        color: #212529;
+        padding: 0.6rem 1rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+        .sidebar .nav-link.active {
+            background-color: #fff6cc;
+            color: #000;
+            font-weight: 600;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: #fffbea;
+        }
+
+/* ==== HEADER ==== */
+header.navbar {
+    background-color: #ffffff;
+    border-bottom: 1px solid #eee;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+header .navbar-brand {
+    font-weight: 600;
+    color: #000;
+}
+
+    header .navbar-brand img {
+        height: 30px;
+        margin-right: 8px;
+    }
+
+/* ==== BUTTONS ==== */
+.btn-primary {
+    background-color: #f1b800;
+    border-color: #f1b800;
+    color: #000;
+    font-weight: 500;
+}
+
+    .btn-primary:hover {
+        background-color: #e0a800;
+        border-color: #e0a800;
+        color: #000;
+    }
+
+.btn-secondary,
+.btn-outline-secondary {
+    color: #333;
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+}
+
+    .btn-secondary:hover,
+    .btn-outline-secondary:hover {
+        background-color: #e9ecef;
+    }
+
+/* ==== TABLES ==== */
+.table {
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+    .table th {
+        background-color: #fafafa;
+        color: #333;
+        font-weight: 600;
+        border-bottom: 2px solid #eee;
+    }
+
+    .table td {
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f1f1;
+    }
+
+.table-hover tbody tr:hover {
+    background-color: #fffbea;
+}
+
+/* ==== LINKS ==== */
+a.board-link {
+    color: #212529;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+    a.board-link:hover {
+        color: #f1b800;
+        text-decoration: underline;
+    }
+
+/* ==== MODAL ==== */
+.modal-content {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+    background-color: #fffef5;
+    border-bottom: 1px solid #f1e6a8;
+}
+
+.form-control:focus {
+    border-color: #f1b800;
+    box-shadow: 0 0 0 0.2rem rgba(241,184,0,0.25);
+}
+
+/* ==== FOOTER ==== */
+footer {
+    font-size: 0.85rem;
+    color: #6c757d;
+    border-top: 1px solid #eee;
+    padding: 1rem;
+    text-align: center;
+}
+
+/* ==== TOASTR ==== */
+#toast-container > div {
+    opacity: 0.95 !important;
+    border-radius: 6px !important;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+}
+
+.toast-success {
+    background-color: #f1b800 !important;
+    color: #000 !important;
+}
+
+.toast-error {
+    background-color: #d9534f !important;
+}
+
+/* ==== HEADER LOGO FIX ==== */
+.logo-img {
+    height: 40px; /* feste Höhe */
+    width: auto; /* Breite passt sich automatisch an */
+    object-fit: contain; /* verhindert Verzerrung */
+}
+
+@media (max-width: 768px) {
+    .logo-img {
+        height: 32px; /* auf kleineren Bildschirmen kleiner */
+    }
+}
+
+/* sorgt dafür, dass Header schlank bleibt */
+.navbar {
+    min-height: 60px;
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
 }
