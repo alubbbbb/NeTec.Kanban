@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore; 
 using NeTec.Kanban.Domain.Entities;
+using NeTec.Kanban.Domain.Entities.ViewModel;
 using NeTec.Kanban.Infrastructure.Data;
 
 namespace NeTec.Kanban.Web.Controllers
@@ -17,18 +18,12 @@ namespace NeTec.Kanban.Web.Controllers
             _userManager = userManager;
         }
 
-        // ------------------------------
-        // INDEX → zeigt alle Boards des aktuellen Benutzers
-        // ------------------------------
         public async Task<IActionResult> Index()
         {
             var currentUserId = _userManager.GetUserId(User);
-
             if (currentUserId == null)
             {
                 TempData["ErrorMessage"] = "Bitte melde dich an, um deine Boards zu sehen.";
-                // 🚀 FALSCH: RedirectToAction("Login", "Account")
-                // ✅ RICHTIG:
                 return Redirect("/Identity/Account/Login");
             }
 
@@ -39,61 +34,74 @@ namespace NeTec.Kanban.Web.Controllers
 
             return View(boards);
         }
-
-        // ------------------------------
-        // POST: Board erstellen
-        // ------------------------------
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Board board)
+        public async Task<IActionResult> Search(string q)
         {
             var currentUserId = _userManager.GetUserId(User);
-
-            if (currentUserId == null)
+            if (currentUserId == null) 
             {
-                TempData["ErrorMessage"] = "Benutzer ist nicht angemeldet.";
                 return Redirect("/Identity/Account/Login");
             }
 
-            if (string.IsNullOrWhiteSpace(board.Titel))
+            if (string.IsNullOrEmpty(q))
             {
-                TempData["ErrorMessage"] = "Bitte gib einen gültigen Namen für das Board ein.";
-                return RedirectToAction(nameof(Index));
+                var defaultBoard = await _context.Boards
+                    .Where(x => x.UserId == currentUserId)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .ToListAsync(); 
+                return View("Index", defaultBoard);
             }
 
-             if (ModelState.IsValid)
-            {
-                board.UserId = currentUserId;
-                board.CreatedAt = DateTime.Now;
+            var boards = await _context.Boards
+                .Where(x => x.UserId == currentUserId && x.Titel.Contains(q))
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync(); // ← ToListAsync statt ToArrayAsync
 
-                _context.Boards.Add(board);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Board erfolgreich erstellt!";
-                return RedirectToAction(nameof(Index));
-            }
-
-            // Wenn Validierung fehlschlägt → Log + Toastr
-            var errors = string.Join("; ", ModelState.Values
-                .SelectMany(v => v.Errors)
-                .Select(e => e.ErrorMessage));
-
-            Console.WriteLine("ModelState Fehler: " + errors);
-
-            TempData["ErrorMessage"] = "Fehler beim Erstellen des Boards.";
-            return RedirectToAction(nameof(Index));
+            ViewData["SearchQuery"] = q;
+            return View("Index", boards);
         }
 
-        // ------------------------------
-        // BOARD DETAILSEITE
-        // ------------------------------
-        public async Task<IActionResult> Kanban(int id)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
         {
             var currentUserId = _userManager.GetUserId(User);
-
             if (currentUserId == null)
             {
-                TempData["ErrorMessage"] = "Bitte melde dich an, um deine Boards zu öffnen.";
+                TempData["ErrorMessage"] = "Bitte melde dich an.";
+                return Redirect("/Identity/Account/Login");
+            }
+
+            var board = await _context.Boards
+                .FirstOrDefaultAsync(b => b.Id == id && b.UserId == currentUserId);
+
+            if (board == null)
+            {
+                TempData["ErrorMessage"] = "Board wurde nicht gefunden oder Sie haben keine Berechtigung.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                _context.Boards.Remove(board);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = $"Board '{board.Titel}' erfolgreich gelöscht!";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Fehler beim Löschen des Boards. Bitte versuchen Sie es erneut.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, EditBoardViewModel model)
+        {
+            var currentUserId = _userManager.GetUserId(User);
+            if (currentUserId == null)
+            {
+                TempData["ErrorMessage"] = "Bitte melde dich an.";
                 return Redirect("/Identity/Account/Login");
             }
 
@@ -106,7 +114,75 @@ namespace NeTec.Kanban.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            return View(board);
+            if (ModelState.IsValid)
+            {
+                board.Titel = model.Titel;
+                board.Description = model.Description;
+
+                _context.Update(board);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = $"Board '{board.Titel}' erfolgreich aktualisiert!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Bitte korrigieren Sie die Eingabefehler.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(CreateBoardViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var currentUserId = _userManager.GetUserId(User);
+                if (currentUserId == null)
+                {
+                    TempData["ErrorMessage"] = "Sitzung abgelaufen. Bitte erneut anmelden.";
+                    return Redirect("/Identity/Account/Login");
+                }
+
+                var board = new Board
+                {
+                    Titel = model.Titel,
+                    UserId = currentUserId,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Boards.Add(board);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Board erfolgreich erstellt!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            TempData["ErrorMessage"] = "Bitte gib einen gültigen Namen für das Board ein.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        public async Task<IActionResult> Details(int id)
+        {
+            var currentUserId = _userManager.GetUserId(User);
+            if (currentUserId == null)
+            {
+                TempData["ErrorMessage"] = "Bitte melde dich an, um deine Boards zu öffnen.";
+                return Redirect("/Identity/Account/Login");
+            }
+
+            var board = await _context.Boards
+                .Include(b => b.Columns)
+                    .ThenInclude(c => c.Tasks)
+                .FirstOrDefaultAsync(b => b.Id == id && b.UserId == currentUserId);
+
+            if (board == null)
+            {
+                TempData["ErrorMessage"] = "Board wurde nicht gefunden.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            return View("Kanban", board);
         }
     }
 }

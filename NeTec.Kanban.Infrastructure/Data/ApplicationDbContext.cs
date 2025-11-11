@@ -67,13 +67,6 @@ namespace NeTec.Kanban.Infrastructure.Data
                 .HasForeignKey(c => c.TaskItemId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Protect user-owned data on user deletion (restrict or set null)
-            builder.Entity<Board>()
-                .HasOne(b => b.User)
-                .WithMany(u => u.Boards)
-                .HasForeignKey(b => b.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
-
             builder.Entity<TaskItem>()
                 .HasOne(t => t.AssignedTo)
                 .WithMany(u => u.AssignedTasks)
