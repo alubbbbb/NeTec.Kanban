@@ -135,32 +135,36 @@ namespace NeTec.Kanban.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateBoardViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var currentUserId = _userManager.GetUserId(User);
-                if (currentUserId == null)
-                {
-                    TempData["ErrorMessage"] = "Sitzung abgelaufen. Bitte erneut anmelden.";
-                    return Redirect("/Identity/Account/Login");
-                }
-
-                var board = new Board
-                {
-                    Titel = model.Titel,
-                    UserId = currentUserId,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.Boards.Add(board);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Board erfolgreich erstellt!";
+                TempData["ErrorMessage"] = "Bitte gib einen gültigen Namen für das Board ein.";
                 return RedirectToAction(nameof(Index));
             }
 
-            TempData["ErrorMessage"] = "Bitte gib einen gültigen Namen für das Board ein.";
+            var currentUserId = _userManager.GetUserId(User);
+            if (currentUserId == null)
+            {
+                TempData["ErrorMessage"] = "Sitzung abgelaufen. Bitte erneut anmelden.";
+                return Redirect("/Identity/Account/Login");
+            }
+
+            var board = new Board
+            {
+                Titel = model.Titel,
+                UserId = currentUserId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Boards.Add(board);
+            await _context.SaveChangesAsync();
+
+            // 🔹 Standardspalten automatisch erzeugen
+            await CreateDefaultColumnsInternal(board.Id);
+
+            TempData["SuccessMessage"] = "Board erfolgreich erstellt!";
             return RedirectToAction(nameof(Index));
         }
+
 
         public async Task<IActionResult> Details(int id)
         {
@@ -184,5 +188,88 @@ namespace NeTec.Kanban.Web.Controllers
 
             return View("Kanban", board);
         }
+
+
+        [HttpPost]
+        public async Task<IActionResult> CreateColumn([FromForm] int boardId, [FromForm] string title)
+        {
+            try
+            {
+                var currentUserId = _userManager.GetUserId(User);
+                if (currentUserId == null)
+                {
+                    return BadRequest("Nicht angemeldet");
+                }
+
+                if (string.IsNullOrWhiteSpace(title))
+                {
+                    return BadRequest("Spalten-Name ist erforderlich");
+                }
+
+                var board = await _context.Boards
+                    .Include(b => b.Columns)
+                    .FirstOrDefaultAsync(b => b.Id == boardId && b.UserId == currentUserId);
+
+                if (board == null)
+                {
+                    return NotFound("Board nicht gefunden");
+                }
+
+                // 🔹 Wenn das Board noch KEINE Spalten hat → Default-Spalten erstellen
+                if (board.Columns == null || !board.Columns.Any())
+                {
+                    await CreateDefaultColumnsInternal(boardId); // interne Variante ohne HTTP-Aufruf
+                                                                 // Board-Objekt neu laden, damit Columns verfügbar sind
+                    board = await _context.Boards
+                        .Include(b => b.Columns)
+                        .FirstOrDefaultAsync(b => b.Id == boardId && b.UserId == currentUserId);
+                }
+
+                // 🔹 Robustere Variante: direkt in der DB nach max OrderIndex fragen
+                var maxOrder = await _context.Columns
+                    .Where(c => c.BoardId == boardId)
+                    .MaxAsync(c => (int?)c.OrderIndex) ?? 0;
+
+                var column = new Column
+                {
+                    BoardId = boardId,
+                    Titel = title,
+                    OrderIndex = maxOrder + 1
+                };
+
+                _context.Columns.Add(column);
+                await _context.SaveChangesAsync();
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Fehler: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Interne Hilfsmethode, um Default-Spalten ohne HTTP-Aufruf zu erstellen.
+        /// </summary>
+        private async Task CreateDefaultColumnsInternal(int boardId)
+        {
+            var board = await _context.Boards
+                .FirstOrDefaultAsync(b => b.Id == boardId);
+
+            if (board == null)
+                return;
+
+            var columns = new[]
+            {
+        new Column { BoardId = boardId, Titel = "To Do", OrderIndex = 1 },
+        new Column { BoardId = boardId, Titel = "In Progress", OrderIndex = 2 },
+        new Column { BoardId = boardId, Titel = "Done", OrderIndex = 3 }
+    };
+
+            _context.Columns.AddRange(columns);
+            await _context.SaveChangesAsync();
+        }
+
+
     }
 }

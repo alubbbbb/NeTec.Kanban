@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace NeTec.Kanban.Domain.Entities.ViewModel
 {
@@ -11,9 +6,10 @@ namespace NeTec.Kanban.Domain.Entities.ViewModel
     {
         [Required(ErrorMessage = "Der Board-Name ist erforderlich.")]
         [StringLength(100, ErrorMessage = "Der Board-Name darf maximal 100 Zeichen lang sein.")]
-        public string Titel { get; set; } = string.Empty;
+        public string? Titel { get; set; }
 
         [StringLength(500, ErrorMessage = "Die Beschreibung darf maximal 500 Zeichen lang sein.")]
-        public string Description { get; set; }
+        // HIER ist die Änderung: Initialisierung mit einem leeren String.
+        public string? Description { get; set; } 
     }
 }

@@ -1,5 +1,5 @@
 ﻿/* =============================
-   🌼 NeTec Kanban – Final Design
+   🌼 NeTec Kanban – Finales Design
    ============================= */
 
 /* ==== GLOBAL ==== */
@@ -12,164 +12,162 @@ body {
 /* ==== SIDEBAR ==== */
 .sidebar {
     background-color: #fff;
-    border-right: 1px solid #e6e6e6;
+    border-right: 1px solid #e9ecef;
     min-height: 100vh;
     padding: 1rem 0;
 }
 
     .sidebar .nav-link {
-        color: #212529;
+        color: #343a40;
         padding: 0.6rem 1rem;
         border-radius: 6px;
         transition: all 0.2s ease;
+        font-weight: 500;
     }
 
         .sidebar .nav-link.active {
-            background-color: #fff6cc;
-            color: #000;
+            background-color: #fff3cd; /* Aktiver Link passend zum Marken-Gelb */
+            color: #212529;
             font-weight: 600;
         }
 
         .sidebar .nav-link:hover {
-            background-color: #fffbea;
+            background-color: #f8f9fa;
         }
+
 
 /* ==== HEADER ==== */
 header.navbar {
     background-color: #ffffff;
-    border-bottom: 1px solid #eee;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border-bottom: 1px solid #e9ecef;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
-header .navbar-brand {
-    font-weight: 600;
-    color: #000;
-}
+/* =================================
+   BUTTON HIERARCHIE
+   ================================= */
 
-    header .navbar-brand img {
-        height: 30px;
-        margin-right: 8px;
-    }
-
-/* ==== BUTTONS ==== */
+/* 1. Primärer Button (Hauptaktionen) */
 .btn-primary {
-    background-color: #f1b800;
-    border-color: #f1b800;
-    color: #000;
-    font-weight: 500;
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    color: #212529 !important;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
     .btn-primary:hover {
-        background-color: #e0a800;
-        border-color: #e0a800;
-        color: #000;
+        background-color: #ffca2c !important;
+        border-color: #ffca2c !important;
+        transform: translateY(-1px);
     }
 
-.btn-secondary,
+/* 2. Sekundärer Button (alternative Aktionen) */
+.btn-secondary {
+    background-color: #e9ecef !important;
+    border-color: #e9ecef !important;
+    color: #212529 !important;
+    font-weight: 500;
+}
+
+    .btn-secondary:hover {
+        background-color: #dee2e6 !important;
+        border-color: #dee2e6 !important;
+    }
+
+/* 3. Tertiärer/Outline Button */
 .btn-outline-secondary {
-    color: #333;
+    background-color: transparent !important;
+    border-color: #ced4da !important;
+    color: #495057 !important;
+    font-weight: 500;
+}
+
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa !important;
+        border-color: #ced4da !important;
+        color: #212529 !important;
+    }
+
+
+/* ==== KANBAN BOARD LAYOUT ==== */
+.kanban-header {
+    padding: 0.8rem 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.board-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+.kanban-columns {
+    display: flex;
+    gap: 1.25rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+
+.column {
+    /* Intelligentes, flexibles Spalten-Layout */
+    flex: 1 1 320px;
+    min-width: 300px;
+    background-color: #f1f3f5;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    max-height: 75vh;
+}
+
+.column-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: #495057;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.task-list {
+    min-height: 100px;
+    overflow-y: auto;
+    flex-grow: 1;
+    padding: 0.75rem;
+}
+
+.task-card {
+    background-color: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    cursor: grab;
+}
+
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 12px rgba(0,0,0,0.1);
+        border-color: #dee2e6;
+    }
+/* ==== HEADER LOGO FIX & LOGOUT BUTTON ==== */
+
+/* Weist dem Logo eine feste, vernünftige Höhe zu */
+.logo-img {
+    height: 32px; /* Höhe anpassen, falls nötig */
+    width: auto;
+    object-fit: contain; /* Verhindert Verzerrung des Bildes */
+}
+
+/* Styling für den speziellen Logout-Button */
+.logout-btn {
     background-color: #f8f9fa;
     border-color: #ced4da;
+    color: #495057;
+    font-weight: 500;
 }
 
-    .btn-secondary:hover,
-    .btn-outline-secondary:hover {
+    .logout-btn:hover {
         background-color: #e9ecef;
     }
-
-/* ==== TABLES ==== */
-.table {
-    background-color: #fff;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-    .table th {
-        background-color: #fafafa;
-        color: #333;
-        font-weight: 600;
-        border-bottom: 2px solid #eee;
-    }
-
-    .table td {
-        vertical-align: middle;
-        border-bottom: 1px solid #f1f1f1;
-    }
-
-.table-hover tbody tr:hover {
-    background-color: #fffbea;
-}
-
-/* ==== LINKS ==== */
-a.board-link {
-    color: #212529;
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-    a.board-link:hover {
-        color: #f1b800;
-        text-decoration: underline;
-    }
-
-/* ==== MODAL ==== */
-.modal-content {
-    border-radius: 10px;
-    border: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.modal-header {
-    background-color: #fffef5;
-    border-bottom: 1px solid #f1e6a8;
-}
-
-.form-control:focus {
-    border-color: #f1b800;
-    box-shadow: 0 0 0 0.2rem rgba(241,184,0,0.25);
-}
-
-/* ==== FOOTER ==== */
-footer {
-    font-size: 0.85rem;
-    color: #6c757d;
-    border-top: 1px solid #eee;
-    padding: 1rem;
-    text-align: center;
-}
-
-/* ==== TOASTR ==== */
-#toast-container > div {
-    opacity: 0.95 !important;
-    border-radius: 6px !important;
-    font-family: 'Segoe UI', Roboto, sans-serif;
-}
-
-.toast-success {
-    background-color: #f1b800 !important;
-    color: #000 !important;
-}
-
-.toast-error {
-    background-color: #d9534f !important;
-}
-
-/* ==== HEADER LOGO FIX ==== */
-.logo-img {
-    height: 40px; /* feste Höhe */
-    width: auto; /* Breite passt sich automatisch an */
-    object-fit: contain; /* verhindert Verzerrung */
-}
-
-@media (max-width: 768px) {
-    .logo-img {
-        height: 32px; /* auf kleineren Bildschirmen kleiner */
-    }
-}
-
-/* sorgt dafür, dass Header schlank bleibt */
-.navbar {
-    min-height: 60px;
-    padding-top: 0.3rem;
-    padding-bottom: 0.3rem;
-}
