@@ -113,9 +113,11 @@
                                 onEnd: function (evt) {
             const taskId = evt.item.dataset.taskId;
             const newColumnId = evt.to.dataset.columnId;
+            const newOrderIndex = Array.from(evt.to.querySelectorAll('.task-card')).indexOf(evt.item);
+
 
             // Server aktualisieren
-            updateTaskColumn(taskId, newColumnId);
+                    updateTaskColumn(taskId, newColumnId,newOrderIndex);
 
             // Zähler dynamisch updaten (clientseitig)
             updateColumnCounters();
@@ -125,13 +127,13 @@
                 });
             }
 
-                    function updateColumnCounters() {
-            document.querySelectorAll('.column').forEach(col => {
-                const taskCount = col.querySelectorAll('.task-card').length;
-                const badge = col.querySelector('.badge.rounded-pill');
-                if (badge) badge.textContent = taskCount;
-            });
-        }
+            function updateColumnCounters() {
+    document.querySelectorAll('.column').forEach(col => {
+        const taskCount = col.querySelectorAll('.task-card').length;
+        const badge = col.querySelector('.badge.rounded-pill');
+        if (badge) badge.textContent = taskCount;
+    });
+}
 
 
             function initializeTaskCreation() {
@@ -189,33 +191,30 @@
                 });
             }
 
-            function updateTaskColumn(taskId, newColumnId) {
-                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                   function updateTaskColumn(taskId, newColumnId, newOrderIndex) {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
 
-                fetch('@Url.Action("UpdateTaskColumn", "Task")', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': token
-                    },
-                    body: JSON.stringify({ taskId: parseInt(taskId), newColumnId: parseInt(newColumnId) })
+            fetch('@Url.Action("UpdateTaskColumn", "Task")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({
+                    taskId: taskId,
+                    newColumnId: newColumnId,
+                    newOrderIndex: newOrderIndex
                 })
-                .then(response => {
-                    if (!response.ok) {
-                        toastr.error('Änderung konnte nicht gespeichert werden.');
-                        // Optional: UI zurücksetzen, aber ein Reload ist sicherer
-                        location.reload();
-                    } else {
-                        // Optional: Visuelles Feedback geben, ohne Reload
-                        // z.B. Spaltenzähler aktualisieren
-                    }
-                })
-                .catch(error => {
-                    console.error('Fehler:', error);
-                    toastr.error('Ein Netzwerkfehler ist aufgetreten.');
-                    location.reload();
-                });
-            }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Server returned ' + response.status);
+            })
+            .catch(error => {
+                console.error('Fehler:', error);
+                toastr.error('Änderung konnte nicht gespeichert werden.');
+            });
+        }
+
 
            function createTask(title, columnId) {
     const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
