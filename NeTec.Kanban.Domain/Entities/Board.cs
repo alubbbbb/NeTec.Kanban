@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NeTec.Kanban.Domain.Entities
 {
@@ -29,5 +30,9 @@ namespace NeTec.Kanban.Domain.Entities
         // Die Liste der Spalten, die zu diesem Board gehören.
         // Wird automatisch von Entity Framework Core geladen, wenn .Include() verwendet wird.
         public ICollection<Column> Columns { get; set; } = new List<Column>();
+        // Board.cs
+        [ForeignKey(nameof(UserId))]
+        public ApplicationUser? Owner { get; set; }
+
     }
 }

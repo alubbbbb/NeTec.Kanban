@@ -194,6 +194,8 @@ namespace NeTec.Kanban.Web.Controllers
 
             return Ok(new { id = te.Id, remaining = task.RemainingHours });
         }
+
+       
     }
 
 }

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using NeTec.Kanban.Domain.Entities;
+using System.Reflection.Emit;
 
 namespace NeTec.Kanban.Infrastructure.Data
 {
@@ -20,6 +21,14 @@ namespace NeTec.Kanban.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            // ApplicationDbContext.OnModelCreating
+            builder.Entity<Column>()
+                .HasIndex(c => new { c.BoardId, c.OrderIndex });
+
+            builder.Entity<TaskItem>()
+                .HasIndex(t => new { t.ColumnId, t.OrderIndex });
+
 
             // ---- Identity column sizing (entspricht deinem ERD-Anforderungsrahmen) ----
             builder.Entity<ApplicationUser>(b =>
@@ -78,6 +87,8 @@ namespace NeTec.Kanban.Infrastructure.Data
             builder.Entity<TaskItem>().Property(t => t.UserId).HasMaxLength(450);
             builder.Entity<Comment>().Property(c => c.UserId).HasMaxLength(450);
             builder.Entity<TimeTracking>().Property(tt => tt.UserId).HasMaxLength(450);
+
+
         }
     }
 }

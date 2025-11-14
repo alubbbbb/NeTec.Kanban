@@ -45,6 +45,10 @@ namespace NeTec.Kanban.Domain.Entities
 
         [ForeignKey(nameof(UserId))]
         public ApplicationUser? AssignedTo { get; set; }
+        // TaskItem.cs
+        [DataType(DataType.Date)]
+        public DateTime? DueDate { get; set; }
+
 
         public ICollection<Comment>? Comments { get; set; }
         public ICollection<TimeTracking>? TimeTrackings { get; set; }
