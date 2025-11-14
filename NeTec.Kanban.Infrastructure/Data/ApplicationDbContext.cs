@@ -2,11 +2,9 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using NeTec.Kanban.Domain.Entities;
-using System.Reflection.Emit;
 
 namespace NeTec.Kanban.Infrastructure.Data
 {
-    // IdentityDbContext<ApplicationUser> (string keys) — einfache Standard-Variante
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
@@ -22,15 +20,18 @@ namespace NeTec.Kanban.Infrastructure.Data
         {
             base.OnModelCreating(builder);
 
-            // ApplicationDbContext.OnModelCreating
+            // ---------------------------------------
+            // Indexe für Sortierung / Spaltenreihenfolge
+            // ---------------------------------------
             builder.Entity<Column>()
                 .HasIndex(c => new { c.BoardId, c.OrderIndex });
 
             builder.Entity<TaskItem>()
                 .HasIndex(t => new { t.ColumnId, t.OrderIndex });
 
-
-            // ---- Identity column sizing (entspricht deinem ERD-Anforderungsrahmen) ----
+            // ---------------------------------------
+            // Identity column sizing (optional, sauber)
+            // ---------------------------------------
             builder.Entity<ApplicationUser>(b =>
             {
                 b.Property(u => u.UserName).HasMaxLength(100);
@@ -44,7 +45,9 @@ namespace NeTec.Kanban.Infrastructure.Data
                 b.Property(r => r.NormalizedName).HasMaxLength(50);
             });
 
-            // ---- Decimal precision ----
+            // ---------------------------------------
+            // Decimal precision (Zeiterfassung)
+            // ---------------------------------------
             builder.Entity<TaskItem>()
                 .Property(t => t.EstimatedHours)
                 .HasColumnType("decimal(8,2)");
@@ -57,38 +60,55 @@ namespace NeTec.Kanban.Infrastructure.Data
                 .Property(tt => tt.HoursSpent)
                 .HasColumnType("decimal(8,2)");
 
-            // ---- Relationships & delete behavior ----
+            // ---------------------------------------
+            // Beziehungen & DeleteBehavior
+            // ---------------------------------------
+
+            // Board → Columns (Cascade erlaubt)
             builder.Entity<Board>()
                 .HasMany(b => b.Columns)
                 .WithOne(c => c.Board)
                 .HasForeignKey(c => c.BoardId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Column → Tasks (Cascade erlaubt)
             builder.Entity<Column>()
                 .HasMany(c => c.Tasks)
                 .WithOne(t => t.Column)
                 .HasForeignKey(t => t.ColumnId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Task → Comments (Cascade erlaubt)
             builder.Entity<TaskItem>()
                 .HasMany(t => t.Comments)
                 .WithOne(c => c.TaskItem)
                 .HasForeignKey(c => c.TaskItemId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Task → AssignedTo (SetNull, weil User gelöscht werden darf)
             builder.Entity<TaskItem>()
                 .HasOne(t => t.AssignedTo)
                 .WithMany(u => u.AssignedTasks)
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // Ensure string FK lengths in DB (for our UserId fields)
+            // ---------------------------------------
+            // FIX: Board → UserId (SetNull, verhindert multiple cascade paths)
+            // ---------------------------------------
+            builder.Entity<Board>()
+                .HasOne(b => b.Owner)
+                .WithMany() // Boards gehören nicht in ApplicationUser
+                .HasForeignKey(b => b.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+
+            // ---------------------------------------
+            // FK string sizes (SQL Server limit 450)
+            // ---------------------------------------
             builder.Entity<Board>().Property(b => b.UserId).HasMaxLength(450);
             builder.Entity<TaskItem>().Property(t => t.UserId).HasMaxLength(450);
             builder.Entity<Comment>().Property(c => c.UserId).HasMaxLength(450);
             builder.Entity<TimeTracking>().Property(tt => tt.UserId).HasMaxLength(450);
-
-
         }
     }
 }

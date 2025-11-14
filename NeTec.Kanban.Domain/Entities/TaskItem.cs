@@ -49,7 +49,6 @@ namespace NeTec.Kanban.Domain.Entities
         [DataType(DataType.Date)]
         public DateTime? DueDate { get; set; }
 
-
         public ICollection<Comment>? Comments { get; set; }
         public ICollection<TimeTracking>? TimeTrackings { get; set; }
 

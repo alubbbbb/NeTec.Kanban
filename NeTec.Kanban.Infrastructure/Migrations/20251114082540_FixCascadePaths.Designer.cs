@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NeTec.Kanban.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using NeTec.Kanban.Infrastructure.Data;
 namespace NeTec.Kanban.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251114082540_FixCascadePaths")]
+    partial class FixCascadePaths
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -243,15 +246,15 @@ namespace NeTec.Kanban.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ApplicationUserId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("OwnerId")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Titel")
                         .IsRequired()
@@ -268,7 +271,7 @@ namespace NeTec.Kanban.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApplicationUserId");
+                    b.HasIndex("OwnerId");
 
                     b.HasIndex("UserId");
 
@@ -478,14 +481,14 @@ namespace NeTec.Kanban.Infrastructure.Migrations
 
             modelBuilder.Entity("NeTec.Kanban.Domain.Entities.Board", b =>
                 {
-                    b.HasOne("NeTec.Kanban.Domain.Entities.ApplicationUser", null)
-                        .WithMany("Boards")
-                        .HasForeignKey("ApplicationUserId");
-
                     b.HasOne("NeTec.Kanban.Domain.Entities.ApplicationUser", "Owner")
+                        .WithMany("Boards")
+                        .HasForeignKey("OwnerId");
+
+                    b.HasOne("NeTec.Kanban.Domain.Entities.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.SetNull)
                         .IsRequired();
 
                     b.Navigation("Owner");
