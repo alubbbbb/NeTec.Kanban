@@ -130,7 +130,15 @@ namespace NeTec.Kanban.Web.Controllers
             _context.TaskItems.Add(task);
             await _context.SaveChangesAsync();
 
-            return Ok(new { id = task.Id });
+            return Ok(new
+            {
+                id = task.Id,
+                title = task.Title,
+                description = task.Description,
+                priority = task.Priority,
+                columnId = task.ColumnId
+            });
+
         }
 
         // -------------------------------------------------------
@@ -182,7 +190,15 @@ namespace NeTec.Kanban.Web.Controllers
             t.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            return Ok();
+            return Ok(new
+            {
+                id = t.Id,
+                title = t.Title,
+                description = t.Description,
+                priority = t.Priority,
+                columnId = t.ColumnId
+            });
+
         }
     }
 }
