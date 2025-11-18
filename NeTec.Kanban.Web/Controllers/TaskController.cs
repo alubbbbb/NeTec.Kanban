@@ -38,6 +38,7 @@ namespace NeTec.Kanban.Web.Controllers
         // DRAG & DROP Column-Update
         // -------------------------------------------------------
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateTaskColumn([FromBody] UpdateTaskRequest request)
         {
             var userId = _userManager.GetUserId(User);

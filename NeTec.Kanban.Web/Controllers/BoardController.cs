@@ -191,7 +191,7 @@ namespace NeTec.Kanban.Web.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> CreateColumn([FromForm] int boardId, [FromForm] string title)
+        public async Task<IActionResult> CreateColumn(int boardId, string title)
         {
             try
             {
@@ -239,8 +239,9 @@ namespace NeTec.Kanban.Web.Controllers
 
                 _context.Columns.Add(column);
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Spalte wurde hinzugefügt";
+                return RedirectToAction("Details", "Board", new { id = boardId });
 
-                return Ok();
             }
             catch (Exception ex)
             {
@@ -264,12 +265,85 @@ namespace NeTec.Kanban.Web.Controllers
         new Column { BoardId = boardId, Titel = "To Do", OrderIndex = 1 },
         new Column { BoardId = boardId, Titel = "In Progress", OrderIndex = 2 },
         new Column { BoardId = boardId, Titel = "Done", OrderIndex = 3 }
-    };
+          };
 
             _context.Columns.AddRange(columns);
             await _context.SaveChangesAsync();
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MoveColumn(int columnId, string direction)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Unauthorized();
+
+            // Spalte inkl. Board laden
+            var column = await _context.Columns
+                .Include(c => c.Board)
+                .FirstOrDefaultAsync(c =>
+                    c.Id == columnId &&
+                    c.Board.UserId == userId);
+
+            if (column == null)
+                return NotFound();
+
+            // Alle Spalten des Boards holen, sortiert nach OrderIndex
+            var siblings = await _context.Columns
+                .Where(c => c.BoardId == column.BoardId)
+                .OrderBy(c => c.OrderIndex)
+                .ToListAsync();
+
+            var index = siblings.FindIndex(c => c.Id == columnId);
+
+            if (direction == "left" && index > 0)
+            {
+                // mit linker Nachbarspalte tauschen
+                var left = siblings[index - 1];
+                var tmp = left.OrderIndex;
+                left.OrderIndex = column.OrderIndex;
+                column.OrderIndex = tmp;
+            }
+            else if (direction == "right" && index < siblings.Count - 1)
+            {
+                // mit rechter Nachbarspalte tauschen
+                var right = siblings[index + 1];
+                var tmp = right.OrderIndex;
+                right.OrderIndex = column.OrderIndex;
+                column.OrderIndex = tmp;
+            }
+
+            await _context.SaveChangesAsync();
+
+            // zurück zum gleichen Board
+            return RedirectToAction("Details", "Board", new { id = column.BoardId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteColumn(int columnId)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null)
+                return Unauthorized();
+
+            // Spalte + Board laden
+            var column = await _context.Columns
+                .Include(c => c.Board)
+                .FirstOrDefaultAsync(c => c.Id == columnId && c.Board.UserId == userId);
+
+            if (column == null)
+                return NotFound();
+
+            int boardId = column.BoardId; // <-- BOARD ID für Redirect sichern
+
+            _context.Columns.Remove(column);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Spalte erfolgreich gelöscht.";
+
+            return RedirectToAction("Details", "Board", new { id = boardId });
+        }
 
     }
 }
