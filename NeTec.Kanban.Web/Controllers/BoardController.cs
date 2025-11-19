@@ -178,6 +178,7 @@ namespace NeTec.Kanban.Web.Controllers
             var board = await _context.Boards
                 .Include(b => b.Columns)
                     .ThenInclude(c => c.Tasks)
+                    .ThenInclude(t => t.AssignedTo)
                 .FirstOrDefaultAsync(b => b.Id == id && b.UserId == currentUserId);
 
             if (board == null)

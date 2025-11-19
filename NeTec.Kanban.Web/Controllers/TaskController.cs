@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NeTec.Kanban.Domain.Entities;
+using NeTec.Kanban.Domain.Entities.ViewModel;
 using NeTec.Kanban.Infrastructure.Data;
 
 namespace NeTec.Kanban.Web.Controllers
@@ -16,6 +17,92 @@ namespace NeTec.Kanban.Web.Controllers
             _context = context;
             _userManager = userManager;
         }
+
+        // ------------------------------
+        // TASK DETAILS: ANZEIGE
+        // ------------------------------
+        //[HttpGet]
+        //public async Task<IActionResult> Details(int id)
+        //{
+        //    var userId = _userManager.GetUserId(User);
+
+        //    var task = await _context.TaskItems
+        //        .Include(t => t.Column)
+        //            .ThenInclude(c => c.Board)
+        //        .Include(t => t.AssignedTo)
+        //        .Include(t => t.Comments)
+        //            .ThenInclude(c => c.User)
+        //        .FirstOrDefaultAsync(t =>
+        //            t.Id == id &&
+        //            t.Column.Board.UserId == userId);
+
+        //    if (task == null)
+        //        return NotFound();
+
+        //    var vm = new TaskDetailsViewModel
+        //    {
+        //        TaskId = task.Id,
+        //        Title = task.Title,
+        //        Description = task.Description,
+        //        Priority = task.Priority,
+        //        DueDate = task.DueDate,
+        //        PlannedTime = task.EstimatedHours,
+        //        ActualTime = task.RemainingHours,
+        //        ColumnName = task.Column.Titel,
+        //        BoardId = task.Column.BoardId,
+        //        AssignedUserName = task.AssignedTo?.UserName ?? "Nicht zugewiesen",
+        //        CreatedAt = task.CreatedAt,
+        //        UpdatedAt = task.UpdatedAt,
+
+        //        Comments = task.Comments
+        //            .OrderBy(c => c.CreatedAt)
+        //            .Select(c => new TaskCommentVM
+        //            {
+        //                UserName = c.User?.UserName ?? "Unbekannt",
+        //                Text = c.Content,
+        //                CreatedAt = c.CreatedAt
+        //            }).ToList()
+        //    };
+
+        //    return View("Index", vm);  
+        //}
+
+
+        // ------------------------------
+        // Kommentar speichern
+        // ------------------------------
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> AddComment(int taskId, string text)
+        //{
+        //    var userId = _userManager.GetUserId(User);
+
+        //    if (string.IsNullOrWhiteSpace(text))
+        //        return RedirectToAction("Index", new { id = taskId });
+
+        //    var task = await _context.TaskItems
+        //        .Include(t => t.Column)
+        //            .ThenInclude(c => c.Board)
+        //        .FirstOrDefaultAsync(t => t.Id == taskId);
+
+        //    if (task == null || task.Column.Board.UserId != userId)
+        //        return Unauthorized();
+
+        //    var comment = new Comment
+        //    {
+        //        TaskItemId = taskId,
+        //        UserId = userId,
+        //        Content = text,
+        //        CreatedAt = DateTime.Now
+        //    };
+
+        //    _context.Comments.Add(comment);
+        //    await _context.SaveChangesAsync();
+
+        //    return RedirectToAction("Details", new { id = taskId });
+        //}
+
+
 
         // -------------------------------------------------------
         // USERS für "Zuständig"
@@ -38,7 +125,6 @@ namespace NeTec.Kanban.Web.Controllers
         // DRAG & DROP Column-Update
         // -------------------------------------------------------
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateTaskColumn([FromBody] UpdateTaskRequest request)
         {
             var userId = _userManager.GetUserId(User);
@@ -201,5 +287,88 @@ namespace NeTec.Kanban.Web.Controllers
             });
 
         }
+
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+
+            var task = await _context.TaskItems
+                .Include(t => t.Column)
+                    .ThenInclude(c => c.Board)
+                .Include(t => t.AssignedTo)
+                .Include(t => t.Comments)
+                    .ThenInclude(c => c.User)
+                .FirstOrDefaultAsync(t =>
+                    t.Id == id &&
+                    t.Column.Board.UserId == userId);
+
+            if (task == null)
+                return NotFound();
+
+            var vm = new TaskDetailsViewModel
+            {
+                TaskId = task.Id,
+                Title = task.Title,
+                Description = task.Description,
+                Priority = task.Priority,
+                DueDate = task.DueDate,
+                PlannedTime = task.EstimatedHours,
+                ActualTime = task.RemainingHours,
+                ColumnName = task.Column.Titel,
+                ColumnId = task.ColumnId, // WICHTIG: Hinzugefügt für Rücksprünge
+                BoardId = task.Column.BoardId,
+                AssignedUserId = task.UserId, // WICHTIG: Für Edit Modal Logik
+                AssignedUserName = task.AssignedTo?.UserName ?? "Nicht zugewiesen",
+                CreatedAt = task.CreatedAt,
+                UpdatedAt = task.UpdatedAt,
+
+                Comments = task.Comments
+                    .OrderByDescending(c => c.CreatedAt) // Neueste zuerst (wie bei modernen Chats/Jira)
+                    .Select(c => new TaskCommentViewModel
+                    {
+                        UserName = c.User?.UserName ?? "Unbekannt",
+                        Text = c.Content,
+                        CreatedAt = c.CreatedAt
+                    }).ToList()
+            };
+
+            return View(vm);
+        }
+
+        // ------------------------------
+        // Kommentar speichern
+        // ------------------------------
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddComment(int taskId, string text)
+        {
+            var userId = _userManager.GetUserId(User);
+
+            if (string.IsNullOrWhiteSpace(text))
+                return RedirectToAction("Details", new { id = taskId }); // Redirect angepasst
+
+            var task = await _context.TaskItems
+                .Include(t => t.Column)
+                    .ThenInclude(c => c.Board)
+                .FirstOrDefaultAsync(t => t.Id == taskId);
+
+            if (task == null || task.Column.Board.UserId != userId)
+                return Unauthorized();
+
+            var comment = new Comment
+            {
+                TaskItemId = taskId,
+                UserId = userId,
+                Content = text,
+                CreatedAt = DateTime.UtcNow // Besser UtcNow für Konsistenz
+            };
+
+            _context.Comments.Add(comment);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Details", new { id = taskId }); // Redirect angepasst
+        }
+
     }
 }

@@ -1,7 +1,5 @@
 ﻿@model IEnumerable<NeTec.Kanban.Domain.Entities.Board>
-@{
-    ViewData["Title"] = "Alle Boards";
-}
+
 
 <!-- Bootstrap Icons CDN -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -19,57 +17,108 @@
     }
 </style>
 
-<div class="container-fluid py-3">
-    <!-- Header-Sektion -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="fw-bold">Alle Boards</h2>
+    <!-- Board-Tabelle -->
+
+@{
+    ViewData["Title"] = "Meine Boards";
+}
+
+<div class="container-fluid py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-dark">Meine Boards</h1>
+            <p class="text-muted small">Verwalte deine Projekte und Aufgaben</p>
+        </div>
         <div class="d-flex gap-2">
-            <form asp-action="Search" method="get" class="d-flex gap-2">
-                <input type="text" name="q" value="@ViewData["SearchQuery"]" class="form-control" placeholder="Board suchen...">
-                <button type="submit" class="btn btn-secondary"><i class="bi bi-search"></i></button>
+            <form asp-action="Search" method="get" class="d-flex">
+                <input type="text" name="q" class="form-control me-2" placeholder="Board suchen..." value="@ViewData["SearchQuery"]">
+                <button type="submit" class="btn btn-light border"><i class="bi bi-search"></i></button>
             </form>
-            <button class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#createBoardModal">
-                <i class="bi bi-plus-lg me-2"></i>Board erstellen
+
+            <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createBoardModal">
+                <i class="bi bi-plus-lg me-2"></i> Neues Board
             </button>
         </div>
     </div>
 
-    <!-- Board-Tabelle -->
-    <table class="table table-hover align-middle bg-white shadow-sm" style="border-radius: 8px; overflow: hidden;">
-        <thead class="table-light">
-            <tr>
-                <th class="py-3 ps-3">Name des Boards</th>
-                <th>Erstellt am</th>
-                <th class="text-end pe-3" style="width: 150px;">Aktionen</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model != null && Model.Any())
-            {
-                foreach (var board in Model)
-                {
-                    <tr>
-                        <td class="ps-3">
-                            <a asp-action="Details" asp-route-id="@board.Id" class="text-decoration-none text-dark fw-medium">@board.Titel</a>
-                        </td>
-                        <td class="text-muted small">@board.CreatedAt.ToString("dd.MM.yyyy")</td>
-                        <td class="pe-3">
-                            <div class="action-buttons">
-                                <a asp-action="Details" asp-route-id="@board.Id" class="btn btn-sm btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i></a>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openEditModal(@board.Id, '@Html.Raw(Html.Encode(board.Titel))')"><i class="bi bi-pencil"></i></button>
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="openDeleteModal(@board.Id, '@Html.Raw(Html.Encode(board.Titel))')"><i class="bi bi-trash"></i></button>
+    <div class="row g-4">
+        @foreach (var item in Model)
+        {
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100 shadow-sm border-0 hover-effect position-relative">
+                    <div class="position-absolute start-0 top-0 bottom-0 bg-warning rounded-start" style="width: 5px;"></div>
+                    
+                    <div class="card-body ps-4">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title fw-bold text-truncate mb-0" style="max-width: 80%;">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none text-dark stretched-link">
+                                    @item.Titel
+                                </a>
+                            </h5>
+
+                            <div class="dropdown position-relative" style="z-index: 2;">
+                                <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" asp-action="Edit" asp-route-id="@item.Id">
+                                            <i class="bi bi-pencil me-2"></i> Umbenennen
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Board wirklich löschen?');">
+                                                <i class="bi bi-trash me-2"></i> Löschen
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
                             </div>
-                        </td>
-                    </tr>
-                }
-            }
-            else
-            {
-                <tr><td colspan="3" class="text-center text-muted py-5"><h5>Noch keine Boards vorhanden</h5></td></tr>
-            }
-        </tbody>
-    </table>
+                        </div>
+
+                        <p class="card-text text-muted small mb-4 text-truncate">
+                            @(string.IsNullOrEmpty(item.Description) ? "Keine Beschreibung" : item.Description)
+                        </p>
+
+                        <div class="d-flex justify-content-between align-items-center text-muted small mt-auto pt-2 border-top">
+                            <span title="Erstellt am">
+                                <i class="bi bi-calendar3 me-1"></i> @item.CreatedAt.ToString("dd.MM.yyyy")
+                            </span>
+
+                            <span class="text-dark fw-bold">Öffnen <i class="bi bi-arrow-right"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        
+        @if (!Model.Any())
+        {
+            <div class="col-12 text-center py-5">
+                <div class="text-muted mb-3">
+                    <i class="bi bi-kanban display-1"></i>
+                </div>
+                <h3>Keine Boards gefunden</h3>
+                <p class="text-muted">Erstelle dein erstes Board, um loszulegen.</p>
+                <a asp-action="Create" class="btn btn-primary mt-2">Erstes Board erstellen</a>
+            </div>
+        }
+    </div>
 </div>
+
+<style>
+    .hover-effect {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-effect:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+</style>
 
 <!-- ========================= MODALS ========================= -->
 <!-- Modal: Board Erstellen -->
