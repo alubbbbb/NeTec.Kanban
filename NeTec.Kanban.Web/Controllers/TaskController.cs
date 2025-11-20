@@ -280,18 +280,60 @@ namespace NeTec.Kanban.Web.Controllers
         }
 
         /// <summary>
-        /// API: Liefert eine Liste aller Benutzer für Dropdown-Menüs (z.B. Zuweisung).
+        /// API: Liefert Benutzerliste für Zuweisungs-Dropdowns.
+        /// Priorisiert den vollen Namen. Falls dieser fehlt, wird der Benutzername (Email) genutzt.
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetAssignableUsers()
         {
-            // Projektion auf anonymes Objekt reduziert die Datenlast (nur ID und Name werden übertragen).
             var users = await _context.Users
-                .Select(u => new { id = u.Id, userName = u.UserName })
                 .AsNoTracking()
+                .Select(u => new
+                {
+                    id = u.Id,
+                    // prüfen auf null UND auf leeren String.
+                    // Wenn FullName da ist -> nimm FullName. Sonst -> nimm UserName.
+                    userName = (u.FullName != null && u.FullName != "") ? u.FullName : u.UserName
+                })
+                // Optional: Sortieren damit es im Dropdown alphabetisch ist
+                .OrderBy(x => x.userName)
                 .ToListAsync();
 
             return Json(users);
+        }
+        /// <summary>
+        /// Löscht eine spezifische Aufgabe und leitet zur Board-Ansicht zurück.
+        /// </summary>
+        /// <param name="id">Die ID der zu löschenden Aufgabe.</param>
+        /// <returns>Redirect zur Board-Ansicht oder Fehlerstatus.</returns>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteTask(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Redirect("/Identity/Account/Login");
+
+            // Laden der Aufgabe inklusive Spalten-Informationen, um die Board-ID für den Redirect zu erhalten.
+            // Gleichzeitig wird geprüft, ob der Benutzer berechtigt ist (Besitzer des Boards).
+            var task = await _context.TaskItems
+                .Include(t => t.Column)
+                .ThenInclude(c => c.Board)
+                .FirstOrDefaultAsync(t => t.Id == id && t.Column.Board.UserId == userId);
+
+            if (task == null)
+            {
+                // Aufgabe nicht gefunden oder Benutzer hat keine Berechtigung.
+                return NotFound();
+            }
+
+            // Speichern der Board-ID für den Redirect, bevor das Objekt gelöscht wird.
+            int boardId = task.Column.BoardId;
+
+            _context.TaskItems.Remove(task);
+            await _context.SaveChangesAsync();
+
+            // Rückleitung zur Detailansicht des Boards (Kanban-Board).
+            return RedirectToAction("Details", "Board", new { id = boardId });
         }
     }
 }

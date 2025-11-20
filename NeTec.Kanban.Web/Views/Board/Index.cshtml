@@ -90,10 +90,12 @@
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-        .hover-effect:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 .5rem 1rem rgba(0,0,0,.1) !important;
-        }
+    .hover-effect:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.1) !important;
+        z-index: 10;
+        background-color: #fff;
+    }
 </style>
 
 <div class="modal fade" id="createBoardModal" tabindex="-1">

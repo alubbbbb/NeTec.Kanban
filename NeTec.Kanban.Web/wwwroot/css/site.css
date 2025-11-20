@@ -189,15 +189,23 @@ header.navbar {
         color: #495057;
     }
 
-/* Edit Button standardmäßig unsichtbar machen */
-.task-card .btn-edit-task {
+
+/* Standard: Wrapper ist unsichtbar */
+.task-actions {
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease-in-out;
 }
 
-/* Wenn man über die Karte hovert -> sichtbar machen */
-.task-card:hover .btn-edit-task {
+/* Hover: Wrapper wird sichtbar*/
+.task-card:hover .task-actions {
     opacity: 1;
+}
+
+/* Touch-Geräte: Immer sichtbar */
+@media (hover: none) {
+    .task-actions {
+        opacity: 1;
+    }
 }
 
 .badge {

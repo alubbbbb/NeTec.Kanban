@@ -1,0 +1,72 @@
+﻿@model IEnumerable<NeTec.Kanban.Domain.Entities.ApplicationUser>
+@{
+    ViewData["Title"] = "Benutzerverwaltung";
+}
+
+<div class="container-fluid py-4 ps-lg-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-0">Benutzerverwaltung</h1>
+            <p class="text-muted small">Übersicht aller registrierten Konten und Rollen.</p>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 py-3 text-uppercase small fw-bold text-muted">Benutzer</th>
+                            <th class="py-3 text-uppercase small fw-bold text-muted">E-Mail</th>
+                            <th class="py-3 text-uppercase small fw-bold text-muted">Rolle</th>
+                            <th class="pe-4 py-3 text-end text-uppercase small fw-bold text-muted">Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3 fw-bold shadow-sm" style="width: 36px; height: 36px;">
+                                            @(user.FullName?.Substring(0, 1).ToUpper() ?? user.UserName.Substring(0, 1).ToUpper())
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">@(user.FullName ?? "Kein Name")</div>
+                                            <div class="small text-muted">ID: @user.Id.Substring(0, 8)...</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>@user.Email</td>
+                                <td>
+                                    @if (user.Email == "admin@netec.de")
+                                    {
+                                        <span class="badge bg-dark">System Admin</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-dark border">User</span>
+                                    }
+                                </td>
+                                <td class="pe-4 text-end">
+                                    @if (user.Email != "admin@netec.de")
+                                    {
+                                        <form action="@Url.Action("DeleteUser", "Home", new { area = "Admin" })" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@user.Id" />
+                                            @Html.AntiForgeryToken()
+                                            <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Soll dieser Benutzer wirklich unwiderruflich gelöscht werden?');">
+                                                <i class="bi bi-trash me-1"></i> Löschen
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

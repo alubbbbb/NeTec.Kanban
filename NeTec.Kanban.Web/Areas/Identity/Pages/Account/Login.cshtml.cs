@@ -106,6 +106,11 @@ namespace NeTec.Kanban.Web.Areas.Identity.Pages.Account
         {
             returnUrl ??= Url.Content("~/");
 
+            if (returnUrl.Contains("/Logout", StringComparison.OrdinalIgnoreCase))
+            {
+                returnUrl = Url.Content("~/");
+            }
+
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
             if (ModelState.IsValid)

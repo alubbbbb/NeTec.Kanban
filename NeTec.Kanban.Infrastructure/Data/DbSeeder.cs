@@ -1,64 +1,61 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NeTec.Kanban.Domain.Entities;
 
 namespace NeTec.Kanban.Infrastructure.Data
 {
+    /// <summary>
+    /// Klasse zur Initialisierung von Stammdaten (Seeding).
+    /// Erstellt beim Anwendungsstart notwendige Rollen und Standard-Benutzerkonten,
+    /// sofern diese noch nicht existieren.
+    /// </summary>
     public static class DbSeeder
     {
-        public static async Task SeedAsync(IServiceProvider services)
+        /// <summary>
+        /// Führt den Seeding-Prozess für Rollen und den Administrator durch.
+        /// </summary>
+        /// <param name="serviceProvider">Der Service Provider zur Auflösung von Abhängigkeiten.</param>
+        public static async Task SeedAsync(IServiceProvider serviceProvider)
         {
-            using var scope = services.CreateScope();
-            var provider = scope.ServiceProvider;
+            // Auflösung der benötigten Dienste via Dependency Injection
+            var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-            var roleManager = provider.GetRequiredService<RoleManager<IdentityRole>>();
-            var userManager = provider.GetRequiredService<UserManager<ApplicationUser>>();
-            var context = provider.GetRequiredService<ApplicationDbContext>();
+            // 1. Definition und Erstellung der Systemrollen
+            var roles = new[] { "Admin", "User" };
 
-            // 1) Rollen anlegen
-            var roles = new[] { "Administrator", "User" };
             foreach (var roleName in roles)
             {
+                // Prüfung, ob die Rolle bereits in der Datenbank existiert
                 if (!await roleManager.RoleExistsAsync(roleName))
                 {
                     await roleManager.CreateAsync(new IdentityRole(roleName));
                 }
             }
 
-            // 2) Admin Benutzer anlegen (falls noch nicht vorhanden)
-            var adminEmail = "admin@example.com";
-            var admin = await userManager.FindByEmailAsync(adminEmail);
-            if (admin == null)
+            // 2. Erstellung des Standard-Administrators
+            var adminEmail = "admin@netec.de";
+            var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+            if (adminUser == null)
             {
-                admin = new ApplicationUser
+                var newAdmin = new ApplicationUser
                 {
-                    UserName = "admin",
+                    UserName = adminEmail,
                     Email = adminEmail,
                     EmailConfirmed = true,
-                    FullName = "Administrator"
+                    FullName = "System Administrator",
+                    CreatedAt = DateTime.UtcNow
                 };
 
-                // Passwort muss den Identity-Policies entsprechen. Beispiel: "Admin123!"
-                var result = await userManager.CreateAsync(admin, "Admin123!");
+                // Erstellung des Benutzers mit initialem Passwort
+                var result = await userManager.CreateAsync(newAdmin, "Admin123!");
+
                 if (result.Succeeded)
                 {
-                    await userManager.AddToRoleAsync(admin, "Administrator");
+                    // Zuweisung der administrativen Rolle
+                    await userManager.AddToRoleAsync(newAdmin, "Admin");
                 }
-            }
-
-            // 3) Demo‑Boards anlegen, falls keine vorhanden sind
-            if (!await context.Boards.AnyAsync())
-            {
-                var demoBoard = new Board { UserId = admin.Id, Titel = "Demo Board", Description = "Beispiel-Board für Demozwecke" };
-                context.Boards.Add(demoBoard);
-                await context.SaveChangesAsync();
-
-                // Beispielspalten mit BoardId setzen
-                context.Columns.Add(new Column { BoardId = demoBoard.Id, Titel = "Backlog", OrderIndex = 0 });
-                context.Columns.Add(new Column { BoardId = demoBoard.Id, Titel = "In Progress", OrderIndex = 1 });
-                context.Columns.Add(new Column { BoardId = demoBoard.Id, Titel = "Done", OrderIndex = 2 });
-                await context.SaveChangesAsync();
             }
         }
     }

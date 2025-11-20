@@ -6,65 +6,54 @@ using NeTec.Kanban.Infrastructure.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // ====================================================
-// 🔹 Datenbankverbindung
+// 1. SERVICE-REGISTRIERUNG (DEPENDENCY INJECTION)
 // ====================================================
+
+// Konfiguration des Datenbankkontexts für Entity Framework Core (SQL Server)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// ====================================================
-// 🔹 Identity-Setup (mit Rollen & integrierter UI)
-// ====================================================
+// Einrichtung von ASP.NET Core Identity für Authentifizierung und Benutzerverwaltung.
+// Die Konfiguration umfasst Standard-Identity-UI, Rollenunterstützung (RBAC) und EF Core Stores.
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = false;
+    options.SignIn.RequireConfirmedAccount = false; // Für interne Zwecke deaktiviert
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 6;
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultUI(); // <- Aktiviert die integrierte Login/Register-UI aus der Cloud
+.AddDefaultUI();
 
-// Login-Routing global festlegen
+// Anpassung der Cookie-Pfade für Login und Zugriffverweigerung
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Identity/Account/Login";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
 });
 
-// ====================================================
-// 🔹 MVC + Razor Pages
-// ====================================================
-builder.Services.AddRazorPages();
+// Registrierung der MVC-Controller mit Views sowie Razor Pages (für Identity UI)
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
 // ====================================================
-// 🔹 Pipeline-Konfiguration
+// 2. HTTP REQUEST PIPELINE (MIDDLEWARE)
 // ====================================================
+
+// Fehlerbehandlung und Sicherheit in Abhängigkeit der Umgebung
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
-
-    // Optional: Datenbank-Seeding
-    using (var scope = app.Services.CreateScope())
-    {
-        var services = scope.ServiceProvider;
-        try
-        {
-            DbSeeder.SeedAsync(services).GetAwaiter().GetResult();
-        }
-        catch (Exception ex)
-        {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "Seeding failed");
-        }
-    }
 }
 else
 {
     app.UseExceptionHandler("/Home/Error");
+    // HSTS (HTTP Strict Transport Security) für Produktionsumgebungen
     app.UseHsts();
 }
 
@@ -73,21 +62,48 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// Auth Middleware muss in dieser Reihenfolge bleiben!
+// Aktivierung der Authentifizierungs- und Autorisierungs-Middleware.
+// Die Reihenfolge ist hier essenziell (Auth vor Authorization).
 app.UseAuthentication();
 app.UseAuthorization();
 
 // ====================================================
-// 🔹 Standardrouten
+// 3. ROUTING KONFIGURATION
 // ====================================================
+
+// Route für Areas (z.B. Admin-Bereich).
+// Muss VOR der Standardroute definiert werden, um korrekt aufgelöst zu werden.
+app.MapControllerRoute(
+    name: "areas",
+    pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+// Standardroute für die Anwendung (Kanban Board als Startseite)
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Board}/{action=Index}/{id?}");
 
-// RazorPages für Identity aktivieren
+// Routing für Identity Razor Pages
 app.MapRazorPages();
 
 // ====================================================
-// 🔹 App starten
+// 4. DATENBANK-INITIALISIERUNG (SEEDING)
 // ====================================================
+
+// Initialisierung von Stammdaten (Rollen, Admin-User) beim Anwendungsstart
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        // Führt den Seeder aus, um sicherzustellen, dass Admin und Rollen existieren
+        await DbSeeder.SeedAsync(services);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Fehler beim Seeding der Datenbank.");
+    }
+}
+
+// Starten der Anwendung
 app.Run();

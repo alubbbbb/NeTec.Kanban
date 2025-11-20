@@ -10,7 +10,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
 
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-
     <link rel="stylesheet" href="~/NeTec.Kanban.Web.styles.css" asp-append-version="true" />
 </head>
 <body>
@@ -21,8 +20,7 @@
 
     <header class="navbar navbar-light bg-white border-bottom shadow-sm px-3 sticky-top">
         <div class="container-fluid d-flex align-items-center justify-content-between">
-
-            <a class="navbar-brand d-flex align-items-center" asp-controller="Board" asp-action="Index">
+            <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Board" asp-action="Index">
                 <img src="~/img/logo.png" alt="NeTec Logo" class="logo-img" />
                 <span class="ms-2 fw-semibold text-dark d-none d-sm-inline">NeTec Kanban</span>
             </a>
@@ -32,18 +30,17 @@
     </header>
 
     <div class="d-flex wrapper">
-
         <nav class="sidebar bg-white border-end">
             <div class="p-3 position-sticky" style="top: 80px;">
                 <div class="fw-bold fs-5 mb-3 px-3">NeTec</div>
 
                 <small class="text-uppercase text-muted fw-semibold ms-1 d-block mb-2 px-3" style="font-size:0.75rem;">
-                    Hauptmenü
+                    Navigation
                 </small>
 
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link @ActiveClass("Board") @ActiveClass("Task")" asp-controller="Board" asp-action="Index">
+                        <a class="nav-link @ActiveClass("Board") @ActiveClass("Task")" asp-area="" asp-controller="Board" asp-action="Index">
                             <i class="bi bi-kanban me-2"></i> Alle Boards
                         </a>
                     </li>
@@ -54,12 +51,11 @@
                             <small class="text-uppercase text-muted fw-semibold ms-1 d-block mb-2 px-3" style="font-size:0.75rem;">Verwaltung</small>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link @ActiveClass("Admin") text-danger" asp-controller="Admin" asp-action="Index">
+                            <a class="nav-link @ActiveClass("Admin") text-danger" asp-area="Admin" asp-controller="Home" asp-action="Index">
                                 <i class="bi bi-shield-lock me-2"></i> Benutzerverwaltung
                             </a>
                         </li>
                     }
-
                 </ul>
             </div>
         </nav>
@@ -70,7 +66,7 @@
     </div>
 
     <footer class="text-center py-3 mt-auto border-top bg-white small text-muted">
-        &copy; @DateTime.Now.Year - NeTec Kanban WebApp - IHK Abschlussprojekt
+        &copy; @DateTime.Now.Year - NeTec Kanban WebApp
     </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
@@ -87,7 +83,6 @@
                 "closeButton": true
             };
 
-            // Übernahme von TempData Nachrichten aus dem Controller
             var successMessage = '@(TempData["SuccessMessage"] as string)';
             if (successMessage) toastr.success(successMessage);
 
