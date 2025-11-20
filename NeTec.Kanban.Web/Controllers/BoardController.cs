@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore;
 using NeTec.Kanban.Domain.Entities;
 using NeTec.Kanban.Domain.Entities.ViewModel;
 using NeTec.Kanban.Infrastructure.Data;
@@ -18,99 +18,123 @@ namespace NeTec.Kanban.Web.Controllers
             _userManager = userManager;
         }
 
+        // ============================================================
+        // 1. BOARD ÜBERSICHT & SUCHE
+        // ============================================================
+
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var currentUserId = _userManager.GetUserId(User);
-            if (currentUserId == null)
-            {
-                TempData["ErrorMessage"] = "Bitte melde dich an, um deine Boards zu sehen.";
-                return Redirect("/Identity/Account/Login");
-            }
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return RedirectToLogin();
 
+            // AsNoTracking() ist schneller, wenn wir die Daten nur lesen (nicht bearbeiten)
             var boards = await _context.Boards
-                .Where(b => b.UserId == currentUserId)
+                .Where(b => b.UserId == userId)
                 .OrderByDescending(b => b.CreatedAt)
+                .AsNoTracking()
                 .ToListAsync();
 
             return View(boards);
         }
+
+        [HttpGet]
         public async Task<IActionResult> Search(string q)
         {
-            var currentUserId = _userManager.GetUserId(User);
-            if (currentUserId == null) 
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return RedirectToLogin();
+
+            // Wenn Suchbegriff leer ist, zeigen wir einfach die normale Liste
+            if (string.IsNullOrWhiteSpace(q))
             {
-                return Redirect("/Identity/Account/Login");
-            }
-
-            if (string.IsNullOrEmpty(q))
-            {
-                var defaultBoard = await _context.Boards
-                    .Where(x => x.UserId == currentUserId)
-                    .OrderByDescending(x => x.CreatedAt)
-                    .ToListAsync(); 
-                return View("Index", defaultBoard);
-            }
-
-            var boards = await _context.Boards
-                .Where(x => x.UserId == currentUserId && x.Titel.Contains(q))
-                .OrderByDescending(x => x.CreatedAt)
-                .ToListAsync(); // ← ToListAsync statt ToArrayAsync
-
-            ViewData["SearchQuery"] = q;
-            return View("Index", boards);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var currentUserId = _userManager.GetUserId(User);
-            if (currentUserId == null)
-            {
-                TempData["ErrorMessage"] = "Bitte melde dich an.";
-                return Redirect("/Identity/Account/Login");
-            }
-
-            var board = await _context.Boards
-                .FirstOrDefaultAsync(b => b.Id == id && b.UserId == currentUserId);
-
-            if (board == null)
-            {
-                TempData["ErrorMessage"] = "Board wurde nicht gefunden oder Sie haben keine Berechtigung.";
                 return RedirectToAction(nameof(Index));
             }
 
-            try
-            {
-                _context.Boards.Remove(board);
-                await _context.SaveChangesAsync();
+            var boards = await _context.Boards
+                .Where(x => x.UserId == userId && x.Titel.Contains(q))
+                .OrderByDescending(x => x.CreatedAt)
+                .AsNoTracking()
+                .ToListAsync();
 
-                TempData["SuccessMessage"] = $"Board '{board.Titel}' erfolgreich gelöscht!";
-            }
-            catch (Exception ex)
+            ViewData["SearchQuery"] = q;
+            return View("Index", boards); // Wir nutzen die gleiche View wie Index
+        }
+
+        // ============================================================
+        // 2. BOARD DETAILS (KANBAN VIEW)
+        // ============================================================
+
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return RedirectToLogin();
+
+            // Hier laden wir ALLES: Board -> Spalten -> Aufgaben -> Zugewiesene User
+            // Das ist nötig, damit das Board vollständig angezeigt werden kann.
+            var board = await _context.Boards
+                .Include(b => b.Columns)
+                    .ThenInclude(c => c.Tasks)
+                        .ThenInclude(t => t.AssignedTo)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.Id == id && b.UserId == userId);
+
+            if (board == null)
             {
-                TempData["ErrorMessage"] = "Fehler beim Löschen des Boards. Bitte versuchen Sie es erneut.";
+                TempData["ErrorMessage"] = "Board nicht gefunden.";
+                return RedirectToAction(nameof(Index));
             }
 
+            return View("Kanban", board);
+        }
+
+        // ============================================================
+        // 3. CRUD AKTIONEN (Erstellen, Bearbeiten, Löschen)
+        // ============================================================
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(CreateBoardViewModel model)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return RedirectToLogin();
+
+            if (!ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = "Ungültige Eingabe.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var board = new Board
+            {
+                Titel = model.Titel,
+                UserId = userId!,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Boards.Add(board);
+            await _context.SaveChangesAsync(); // Board speichern, damit es eine ID bekommt
+
+            // Automatisch die 3 Standard-Spalten anlegen
+            await CreateDefaultColumnsInternal(board.Id);
+
+            TempData["SuccessMessage"] = "Board erfolgreich erstellt!";
             return RedirectToAction(nameof(Index));
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, EditBoardViewModel model)
         {
-            var currentUserId = _userManager.GetUserId(User);
-            if (currentUserId == null)
-            {
-                TempData["ErrorMessage"] = "Bitte melde dich an.";
-                return Redirect("/Identity/Account/Login");
-            }
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return RedirectToLogin();
 
-            var board = await _context.Boards
-                .FirstOrDefaultAsync(b => b.Id == id && b.UserId == currentUserId);
+            // Wir laden nur das Board, um zu prüfen, ob es dem User gehört
+            var board = await _context.Boards.FindAsync(id);
 
-            if (board == null)
+            if (board == null || board.UserId != userId)
             {
-                TempData["ErrorMessage"] = "Board wurde nicht gefunden.";
+                TempData["ErrorMessage"] = "Zugriff verweigert oder nicht gefunden.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -118,206 +142,78 @@ namespace NeTec.Kanban.Web.Controllers
             {
                 board.Titel = model.Titel;
                 board.Description = model.Description;
+                // UpdatedAt setzen wäre hier guter Stil:
+                // board.UpdatedAt = DateTime.UtcNow; 
 
-                _context.Update(board);
                 await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = $"Board '{board.Titel}' erfolgreich aktualisiert!";
-            }
-            else
-            {
-                TempData["ErrorMessage"] = "Bitte korrigieren Sie die Eingabefehler.";
+                TempData["SuccessMessage"] = "Board aktualisiert!";
             }
 
             return RedirectToAction(nameof(Index));
         }
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateBoardViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                TempData["ErrorMessage"] = "Bitte gib einen gültigen Namen für das Board ein.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var currentUserId = _userManager.GetUserId(User);
-            if (currentUserId == null)
-            {
-                TempData["ErrorMessage"] = "Sitzung abgelaufen. Bitte erneut anmelden.";
-                return Redirect("/Identity/Account/Login");
-            }
-
-            var board = new Board
-            {
-                Titel = model.Titel,
-                UserId = currentUserId,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.Boards.Add(board);
-            await _context.SaveChangesAsync();
-
-            // 🔹 Standardspalten automatisch erzeugen
-            await CreateDefaultColumnsInternal(board.Id);
-
-            TempData["SuccessMessage"] = "Board erfolgreich erstellt!";
-            return RedirectToAction(nameof(Index));
-        }
-
-
-        public async Task<IActionResult> Details(int id)
-        {
-            var currentUserId = _userManager.GetUserId(User);
-            if (currentUserId == null)
-            {
-                TempData["ErrorMessage"] = "Bitte melde dich an, um deine Boards zu öffnen.";
-                return Redirect("/Identity/Account/Login");
-            }
-
-            var board = await _context.Boards
-                .Include(b => b.Columns)
-                    .ThenInclude(c => c.Tasks)
-                    .ThenInclude(t => t.AssignedTo)
-                .FirstOrDefaultAsync(b => b.Id == id && b.UserId == currentUserId);
-
-            if (board == null)
-            {
-                TempData["ErrorMessage"] = "Board wurde nicht gefunden.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View("Kanban", board);
-        }
-
-
-        [HttpPost]
-        public async Task<IActionResult> CreateColumn(int boardId, string title)
-        {
-            try
-            {
-                var currentUserId = _userManager.GetUserId(User);
-                if (currentUserId == null)
-                {
-                    return BadRequest("Nicht angemeldet");
-                }
-
-                if (string.IsNullOrWhiteSpace(title))
-                {
-                    return BadRequest("Spalten-Name ist erforderlich");
-                }
-
-                var board = await _context.Boards
-                    .Include(b => b.Columns)
-                    .FirstOrDefaultAsync(b => b.Id == boardId && b.UserId == currentUserId);
-
-                if (board == null)
-                {
-                    return NotFound("Board nicht gefunden");
-                }
-
-                // 🔹 Wenn das Board noch KEINE Spalten hat → Default-Spalten erstellen
-                if (board.Columns == null || !board.Columns.Any())
-                {
-                    await CreateDefaultColumnsInternal(boardId); // interne Variante ohne HTTP-Aufruf
-                                                                 // Board-Objekt neu laden, damit Columns verfügbar sind
-                    board = await _context.Boards
-                        .Include(b => b.Columns)
-                        .FirstOrDefaultAsync(b => b.Id == boardId && b.UserId == currentUserId);
-                }
-
-                // 🔹 Robustere Variante: direkt in der DB nach max OrderIndex fragen
-                var maxOrder = await _context.Columns
-                    .Where(c => c.BoardId == boardId)
-                    .MaxAsync(c => (int?)c.OrderIndex) ?? 0;
-
-                var column = new Column
-                {
-                    BoardId = boardId,
-                    Titel = title,
-                    OrderIndex = maxOrder + 1
-                };
-
-                _context.Columns.Add(column);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Spalte wurde hinzugefügt";
-                return RedirectToAction("Details", "Board", new { id = boardId });
-
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Fehler: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Interne Hilfsmethode, um Default-Spalten ohne HTTP-Aufruf zu erstellen.
-        /// </summary>
-        private async Task CreateDefaultColumnsInternal(int boardId)
-        {
-            var board = await _context.Boards
-                .FirstOrDefaultAsync(b => b.Id == boardId);
-
-            if (board == null)
-                return;
-
-            var columns = new[]
-            {
-        new Column { BoardId = boardId, Titel = "To Do", OrderIndex = 1 },
-        new Column { BoardId = boardId, Titel = "In Progress", OrderIndex = 2 },
-        new Column { BoardId = boardId, Titel = "Done", OrderIndex = 3 }
-          };
-
-            _context.Columns.AddRange(columns);
-            await _context.SaveChangesAsync();
-        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MoveColumn(int columnId, string direction)
+        public async Task<IActionResult> Delete(int id)
         {
             var userId = _userManager.GetUserId(User);
-            if (userId == null) return Unauthorized();
+            if (userId == null) return RedirectToLogin();
 
-            // Spalte inkl. Board laden
-            var column = await _context.Columns
-                .Include(c => c.Board)
-                .FirstOrDefaultAsync(c =>
-                    c.Id == columnId &&
-                    c.Board.UserId == userId);
+            var board = await _context.Boards
+                .FirstOrDefaultAsync(b => b.Id == id && b.UserId == userId);
 
-            if (column == null)
-                return NotFound();
+            if (board == null) return NotFound();
 
-            // Alle Spalten des Boards holen, sortiert nach OrderIndex
-            var siblings = await _context.Columns
-                .Where(c => c.BoardId == column.BoardId)
-                .OrderBy(c => c.OrderIndex)
-                .ToListAsync();
-
-            var index = siblings.FindIndex(c => c.Id == columnId);
-
-            if (direction == "left" && index > 0)
+            try
             {
-                // mit linker Nachbarspalte tauschen
-                var left = siblings[index - 1];
-                var tmp = left.OrderIndex;
-                left.OrderIndex = column.OrderIndex;
-                column.OrderIndex = tmp;
+                _context.Boards.Remove(board);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Board gelöscht.";
             }
-            else if (direction == "right" && index < siblings.Count - 1)
+            catch
             {
-                // mit rechter Nachbarspalte tauschen
-                var right = siblings[index + 1];
-                var tmp = right.OrderIndex;
-                right.OrderIndex = column.OrderIndex;
-                column.OrderIndex = tmp;
+                TempData["ErrorMessage"] = "Fehler beim Löschen.";
             }
 
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ============================================================
+        // 4. SPALTEN LOGIK
+        // ============================================================
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateColumn(int boardId, string title)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return RedirectToLogin();
+
+            if (string.IsNullOrWhiteSpace(title))
+                return BadRequest("Titel fehlt.");
+
+            // Sicherheitscheck: Gehört das Board dem User?
+            var boardExists = await _context.Boards
+                .AnyAsync(b => b.Id == boardId && b.UserId == userId);
+
+            if (!boardExists) return NotFound();
+
+            // Höchsten OrderIndex finden, damit die neue Spalte ganz rechts landet
+            var maxOrder = await _context.Columns
+                .Where(c => c.BoardId == boardId)
+                .MaxAsync(c => (int?)c.OrderIndex) ?? 0;
+
+            var column = new Column
+            {
+                BoardId = boardId,
+                Titel = title,
+                OrderIndex = maxOrder + 1
+            };
+
+            _context.Columns.Add(column);
             await _context.SaveChangesAsync();
 
-            // zurück zum gleichen Board
-            return RedirectToAction("Details", "Board", new { id = column.BoardId });
+            return RedirectToAction("Details", new { id = boardId });
         }
 
         [HttpPost]
@@ -325,26 +221,88 @@ namespace NeTec.Kanban.Web.Controllers
         public async Task<IActionResult> DeleteColumn(int columnId)
         {
             var userId = _userManager.GetUserId(User);
-            if (userId == null)
-                return Unauthorized();
+            if (userId == null) return RedirectToLogin();
 
-            // Spalte + Board laden
             var column = await _context.Columns
                 .Include(c => c.Board)
                 .FirstOrDefaultAsync(c => c.Id == columnId && c.Board.UserId == userId);
 
-            if (column == null)
-                return NotFound();
+            if (column == null) return NotFound();
 
-            int boardId = column.BoardId; // <-- BOARD ID für Redirect sichern
+            int boardId = column.BoardId; // ID merken für Redirect
 
             _context.Columns.Remove(column);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Spalte erfolgreich gelöscht.";
-
-            return RedirectToAction("Details", "Board", new { id = boardId });
+            return RedirectToAction("Details", new { id = boardId });
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MoveColumn(int columnId, string direction)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return RedirectToLogin();
+
+            var column = await _context.Columns
+                .Include(c => c.Board)
+                .FirstOrDefaultAsync(c => c.Id == columnId && c.Board.UserId == userId);
+
+            if (column == null) return NotFound();
+
+            // Alle Nachbarn laden
+            var siblings = await _context.Columns
+                .Where(c => c.BoardId == column.BoardId)
+                .OrderBy(c => c.OrderIndex)
+                .ToListAsync();
+
+            var currentIndex = siblings.IndexOf(column);
+
+            // Logik zum Tauschen der Reihenfolge (Swap)
+            if (direction == "left" && currentIndex > 0)
+            {
+                var neighbor = siblings[currentIndex - 1];
+                (column.OrderIndex, neighbor.OrderIndex) = (neighbor.OrderIndex, column.OrderIndex);
+            }
+            else if (direction == "right" && currentIndex < siblings.Count - 1)
+            {
+                var neighbor = siblings[currentIndex + 1];
+                (column.OrderIndex, neighbor.OrderIndex) = (neighbor.OrderIndex, column.OrderIndex);
+            }
+
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Details", new { id = column.BoardId });
+        }
+
+        // ============================================================
+        // 5. INTERNE HILFSMETHODEN
+        // ============================================================
+
+        /// <summary>
+        /// Erstellt die Standard-Spalten (To Do, In Progress, Done)
+        /// </summary>
+        private async Task CreateDefaultColumnsInternal(int boardId)
+        {
+            // Wir brauchen hier KEIN Board laden. Die ID reicht.
+            // Das spart einen Datenbank-Zugriff.
+            var columns = new[]
+            {
+                new Column { BoardId = boardId, Titel = "To Do", OrderIndex = 1 },
+                new Column { BoardId = boardId, Titel = "In Progress", OrderIndex = 2 },
+                new Column { BoardId = boardId, Titel = "Done", OrderIndex = 3 }
+            };
+
+            _context.Columns.AddRange(columns);
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Zentraler Redirect zum Login mit Fehlermeldung
+        /// </summary>
+        private IActionResult RedirectToLogin()
+        {
+            TempData["ErrorMessage"] = "Bitte anmelden.";
+            return Redirect("/Identity/Account/Login");
+        }
     }
 }

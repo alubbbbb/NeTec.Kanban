@@ -7,6 +7,11 @@ using NeTec.Kanban.Infrastructure.Data;
 
 namespace NeTec.Kanban.Web.Controllers
 {
+    /// <summary>
+    /// Controller zur Verwaltung von Aufgaben (Tasks).
+    /// Behandelt die Anzeige von Details, CRUD-Operationen sowie API-Endpunkte
+    /// für Drag & Drop und asynchrone Bearbeitung.
+    /// </summary>
     public class TaskController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -18,167 +23,132 @@ namespace NeTec.Kanban.Web.Controllers
             _userManager = userManager;
         }
 
-        // ------------------------------
-        // TASK DETAILS: ANZEIGE
-        // ------------------------------
-        //[HttpGet]
-        //public async Task<IActionResult> Details(int id)
-        //{
-        //    var userId = _userManager.GetUserId(User);
+        // ============================================================
+        // MVC VIEW ACTIONS (Seitenaufrufe)
+        // ============================================================
 
-        //    var task = await _context.TaskItems
-        //        .Include(t => t.Column)
-        //            .ThenInclude(c => c.Board)
-        //        .Include(t => t.AssignedTo)
-        //        .Include(t => t.Comments)
-        //            .ThenInclude(c => c.User)
-        //        .FirstOrDefaultAsync(t =>
-        //            t.Id == id &&
-        //            t.Column.Board.UserId == userId);
-
-        //    if (task == null)
-        //        return NotFound();
-
-        //    var vm = new TaskDetailsViewModel
-        //    {
-        //        TaskId = task.Id,
-        //        Title = task.Title,
-        //        Description = task.Description,
-        //        Priority = task.Priority,
-        //        DueDate = task.DueDate,
-        //        PlannedTime = task.EstimatedHours,
-        //        ActualTime = task.RemainingHours,
-        //        ColumnName = task.Column.Titel,
-        //        BoardId = task.Column.BoardId,
-        //        AssignedUserName = task.AssignedTo?.UserName ?? "Nicht zugewiesen",
-        //        CreatedAt = task.CreatedAt,
-        //        UpdatedAt = task.UpdatedAt,
-
-        //        Comments = task.Comments
-        //            .OrderBy(c => c.CreatedAt)
-        //            .Select(c => new TaskCommentVM
-        //            {
-        //                UserName = c.User?.UserName ?? "Unbekannt",
-        //                Text = c.Content,
-        //                CreatedAt = c.CreatedAt
-        //            }).ToList()
-        //    };
-
-        //    return View("Index", vm);  
-        //}
-
-
-        // ------------------------------
-        // Kommentar speichern
-        // ------------------------------
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> AddComment(int taskId, string text)
-        //{
-        //    var userId = _userManager.GetUserId(User);
-
-        //    if (string.IsNullOrWhiteSpace(text))
-        //        return RedirectToAction("Index", new { id = taskId });
-
-        //    var task = await _context.TaskItems
-        //        .Include(t => t.Column)
-        //            .ThenInclude(c => c.Board)
-        //        .FirstOrDefaultAsync(t => t.Id == taskId);
-
-        //    if (task == null || task.Column.Board.UserId != userId)
-        //        return Unauthorized();
-
-        //    var comment = new Comment
-        //    {
-        //        TaskItemId = taskId,
-        //        UserId = userId,
-        //        Content = text,
-        //        CreatedAt = DateTime.Now
-        //    };
-
-        //    _context.Comments.Add(comment);
-        //    await _context.SaveChangesAsync();
-
-        //    return RedirectToAction("Details", new { id = taskId });
-        //}
-
-
-
-        // -------------------------------------------------------
-        // USERS für "Zuständig"
-        // -------------------------------------------------------
+        /// <summary>
+        /// Lädt die Detailansicht einer spezifischen Aufgabe inklusive aller relationalen Daten
+        /// (Spalte, Board, zugewiesener Benutzer, Kommentare).
+        /// </summary>
+        /// <param name="id">Die ID der anzuzeigenden Aufgabe.</param>
+        /// <returns>View mit TaskDetailsViewModel oder NotFound.</returns>
         [HttpGet]
-        public async Task<IActionResult> GetAssignableUsers()
-        {
-            var users = await _context.Users
-                .Select(u => new
-                {
-                    id = u.Id,
-                    userName = u.UserName
-                })
-                .ToListAsync();
-
-            return Json(users);
-        }
-
-        // -------------------------------------------------------
-        // DRAG & DROP Column-Update
-        // -------------------------------------------------------
-        [HttpPost]
-        public async Task<IActionResult> UpdateTaskColumn([FromBody] UpdateTaskRequest request)
+        public async Task<IActionResult> Details(int id)
         {
             var userId = _userManager.GetUserId(User);
-            if (userId == null) return Unauthorized();
+            if (userId == null) return Redirect("/Identity/Account/Login");
 
+            // Eager Loading der Entität zur Vermeidung von N+1 Problemen.
+            // AsNoTracking wird zur Performance-Optimierung verwendet, da hier nur Lesezugriff erfolgt.
             var task = await _context.TaskItems
-                .Include(t => t.Column)
-                .ThenInclude(c => c.Board)
-                .FirstOrDefaultAsync(t =>
-                    t.Id == request.TaskId &&
-                    t.Column!.Board!.UserId == userId);
+                .Include(t => t.Column).ThenInclude(c => c.Board)
+                .Include(t => t.AssignedTo)
+                .Include(t => t.Comments).ThenInclude(c => c.User)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == id && t.Column.Board.UserId == userId);
 
             if (task == null) return NotFound();
 
-            var targetColumn = await _context.Columns
-                .Include(c => c.Board)
-                .FirstOrDefaultAsync(c =>
-                    c.Id == request.NewColumnId &&
-                    c.Board!.UserId == userId);
-
-            if (targetColumn == null) return NotFound();
-
-            task.ColumnId = request.NewColumnId;
-
-            if (request.NewOrderIndex is int newIndex && newIndex >= 0)
+            // Mapping auf ViewModel zur Entkopplung von Datenbank-Entität und Präsentationsschicht
+            var vm = new TaskDetailsViewModel
             {
-                var siblings = await _context.TaskItems
-                    .Where(t => t.ColumnId == request.NewColumnId && t.Id != task.Id)
-                    .OrderBy(t => t.OrderIndex)
-                    .ToListAsync();
+                TaskId = task.Id,
+                Title = task.Title,
+                Description = task.Description,
+                Priority = task.Priority,
+                DueDate = task.DueDate,
+                PlannedTime = task.EstimatedHours,
+                ActualTime = task.RemainingHours,
+                ColumnName = task.Column.Titel,
+                ColumnId = task.ColumnId,
+                BoardId = task.Column.BoardId,
+                AssignedUserId = task.UserId,
+                AssignedUserName = task.AssignedTo?.UserName ?? "Nicht zugewiesen",
+                CreatedAt = task.CreatedAt,
+                UpdatedAt = task.UpdatedAt,
+                FullName = task.AssignedTo.FullName,
+                Comments = task.Comments
+                    .OrderByDescending(c => c.CreatedAt)
+                    .Select(c => new TaskCommentViewModel
+                    {
+                        UserName = c.User?.UserName ?? "Unbekannt",
+                        Text = c.Content,
+                        CreatedAt = c.CreatedAt
+                    }).ToList()
+            };
 
-                for (int i = 0; i < siblings.Count; i++)
-                    siblings[i].OrderIndex = (i >= newIndex) ? i + 1 : i;
-
-                task.OrderIndex = newIndex;
-            }
-            else
-            {
-                var max = await _context.TaskItems
-                    .Where(t => t.ColumnId == request.NewColumnId)
-                    .MaxAsync(t => (int?)t.OrderIndex) ?? 0;
-
-                task.OrderIndex = max + 1;
-            }
-
-            task.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            return Ok();
+            return View(vm);
         }
 
-        // -------------------------------------------------------
-        // TASK erstellen
-        // -------------------------------------------------------
+        /// <summary>
+        /// Fügt einen neuen Kommentar zu einer Aufgabe hinzu.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddComment(int taskId, string text)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Redirect("/Identity/Account/Login");
+
+            if (string.IsNullOrWhiteSpace(text))
+                return RedirectToAction("Details", new { id = taskId });
+
+            // Validierung: Existiert der Task und hat der Benutzer Zugriff darauf?
+            // AnyAsync ist performanter als das Laden des gesamten Objekts.
+            var taskExists = await _context.TaskItems
+                .Include(t => t.Column).ThenInclude(c => c.Board)
+                .AnyAsync(t => t.Id == taskId && t.Column.Board.UserId == userId);
+
+            if (!taskExists) return Unauthorized();
+
+            var comment = new Comment
+            {
+                TaskItemId = taskId,
+                UserId = userId,
+                Content = text,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Comments.Add(comment);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Details", new { id = taskId });
+        }
+
+        // ============================================================
+        // API ENDPOINTS (AJAX / JSON)
+        // ============================================================
+
+        /// <summary>
+        /// API: Liefert die Rohdaten einer Aufgabe für das Edit-Modal (Client-Side Rendering).
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetTask(int id)
+        {
+            var t = await _context.TaskItems
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (t == null) return NotFound();
+
+            return Json(new
+            {
+                id = t.Id,
+                title = t.Title,
+                description = t.Description,
+                priority = t.Priority,
+                dueDate = t.DueDate?.ToString("yyyy-MM-dd"),
+                plannedTime = t.EstimatedHours,
+                actualTime = t.RemainingHours,
+                assignedUserId = t.UserId,
+                columnId = t.ColumnId
+            });
+        }
+
+        /// <summary>
+        /// API: Erstellt eine neue Aufgabe basierend auf JSON-Daten.
+        /// </summary>
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] EditTaskRequest req)
         {
@@ -188,13 +158,14 @@ namespace NeTec.Kanban.Web.Controllers
             if (string.IsNullOrWhiteSpace(req.Title))
                 return BadRequest("Titel erforderlich.");
 
+            // Validierung der Spaltenzugehörigkeit (Sicherheitsaspekt)
             var column = await _context.Columns
                 .Include(c => c.Board)
                 .FirstOrDefaultAsync(c => c.Id == req.ColumnId && c.Board!.UserId == userId);
 
-            if (column == null)
-                return NotFound("Spalte nicht gefunden.");
+            if (column == null) return NotFound("Spalte nicht gefunden oder kein Zugriff.");
 
+            // Ermittlung des aktuellen Max-Index zur korrekten Einsortierung am Ende der Liste
             var maxOrder = await _context.TaskItems
                 .Where(t => t.ColumnId == req.ColumnId)
                 .MaxAsync(t => (int?)t.OrderIndex) ?? 0;
@@ -217,56 +188,28 @@ namespace NeTec.Kanban.Web.Controllers
             _context.TaskItems.Add(task);
             await _context.SaveChangesAsync();
 
-            return Ok(new
-            {
-                id = task.Id,
-                title = task.Title,
-                description = task.Description,
-                priority = task.Priority,
-                columnId = task.ColumnId
-            });
-
+            return Ok(new { id = task.Id });
         }
 
-        // -------------------------------------------------------
-        // TASK Laden
-        // -------------------------------------------------------
-        [HttpGet]
-        public async Task<IActionResult> GetTask(int id)
-        {
-            var t = await _context.TaskItems
-                .Include(x => x.Column)
-                .FirstOrDefaultAsync(x => x.Id == id);
-
-            if (t == null) return NotFound();
-
-            return Json(new
-            {
-                id = t.Id,
-                title = t.Title,
-                description = t.Description,
-                priority = t.Priority,
-                dueDate = t.DueDate?.ToString("yyyy-MM-dd"),
-                plannedTime = t.EstimatedHours,
-                actualTime = t.RemainingHours,
-                assignedUserId = t.UserId,
-                columnId = t.ColumnId
-            });
-        }
-
-        // -------------------------------------------------------
-        // TASK bearbeiten
-        // -------------------------------------------------------
+        /// <summary>
+        /// API: Aktualisiert die Stammdaten einer Aufgabe.
+        /// </summary>
         [HttpPost]
         public async Task<IActionResult> EditTask([FromBody] EditTaskRequest req)
         {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Unauthorized();
+
             if (string.IsNullOrWhiteSpace(req.Title))
                 return BadRequest("Titel erforderlich.");
 
-            var t = await _context.TaskItems.FindAsync(req.Id);
-            if (t == null)
-                return NotFound();
+            var t = await _context.TaskItems
+                .Include(x => x.Column).ThenInclude(c => c.Board)
+                .FirstOrDefaultAsync(x => x.Id == req.Id && x.Column.Board.UserId == userId);
 
+            if (t == null) return NotFound();
+
+            // Aktualisierung der Eigenschaften
             t.Title = req.Title;
             t.Description = req.Description;
             t.Priority = req.Priority ?? "Medium";
@@ -277,98 +220,78 @@ namespace NeTec.Kanban.Web.Controllers
             t.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            return Ok(new
-            {
-                id = t.Id,
-                title = t.Title,
-                description = t.Description,
-                priority = t.Priority,
-                columnId = t.ColumnId
-            });
-
+            return Ok(new { id = t.Id });
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Details(int id)
-        {
-            var userId = _userManager.GetUserId(User);
-
-            var task = await _context.TaskItems
-                .Include(t => t.Column)
-                    .ThenInclude(c => c.Board)
-                .Include(t => t.AssignedTo)
-                .Include(t => t.Comments)
-                    .ThenInclude(c => c.User)
-                .FirstOrDefaultAsync(t =>
-                    t.Id == id &&
-                    t.Column.Board.UserId == userId);
-
-            if (task == null)
-                return NotFound();
-
-            var vm = new TaskDetailsViewModel
-            {
-                TaskId = task.Id,
-                Title = task.Title,
-                Description = task.Description,
-                Priority = task.Priority,
-                DueDate = task.DueDate,
-                PlannedTime = task.EstimatedHours,
-                ActualTime = task.RemainingHours,
-                ColumnName = task.Column.Titel,
-                ColumnId = task.ColumnId, // WICHTIG: Hinzugefügt für Rücksprünge
-                BoardId = task.Column.BoardId,
-                AssignedUserId = task.UserId, // WICHTIG: Für Edit Modal Logik
-                AssignedUserName = task.AssignedTo?.UserName ?? "Nicht zugewiesen",
-                CreatedAt = task.CreatedAt,
-                UpdatedAt = task.UpdatedAt,
-
-                Comments = task.Comments
-                    .OrderByDescending(c => c.CreatedAt) // Neueste zuerst (wie bei modernen Chats/Jira)
-                    .Select(c => new TaskCommentViewModel
-                    {
-                        UserName = c.User?.UserName ?? "Unbekannt",
-                        Text = c.Content,
-                        CreatedAt = c.CreatedAt
-                    }).ToList()
-            };
-
-            return View(vm);
-        }
-
-        // ------------------------------
-        // Kommentar speichern
-        // ------------------------------
+        /// <summary>
+        /// API: Verarbeitet Drag & Drop Aktionen.
+        /// Behandelt sowohl das Verschieben in eine andere Spalte als auch die Neusortierung innerhalb einer Spalte.
+        /// </summary>
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddComment(int taskId, string text)
+        public async Task<IActionResult> UpdateTaskColumn([FromBody] UpdateTaskRequest request)
         {
             var userId = _userManager.GetUserId(User);
-
-            if (string.IsNullOrWhiteSpace(text))
-                return RedirectToAction("Details", new { id = taskId }); // Redirect angepasst
+            if (userId == null) return Unauthorized();
 
             var task = await _context.TaskItems
-                .Include(t => t.Column)
-                    .ThenInclude(c => c.Board)
-                .FirstOrDefaultAsync(t => t.Id == taskId);
+                .Include(t => t.Column).ThenInclude(c => c.Board)
+                .FirstOrDefaultAsync(t => t.Id == request.TaskId && t.Column.Board.UserId == userId);
 
-            if (task == null || task.Column.Board.UserId != userId)
-                return Unauthorized();
+            if (task == null) return NotFound();
 
-            var comment = new Comment
+            // 1. Verarbeitung von Spaltenwechseln
+            if (task.ColumnId != request.NewColumnId)
             {
-                TaskItemId = taskId,
-                UserId = userId,
-                Content = text,
-                CreatedAt = DateTime.UtcNow // Besser UtcNow für Konsistenz
-            };
+                // Validierung der Zielspalte
+                var targetExists = await _context.Columns
+                    .Include(c => c.Board)
+                    .AnyAsync(c => c.Id == request.NewColumnId && c.Board.UserId == userId);
 
-            _context.Comments.Add(comment);
+                if (!targetExists) return NotFound();
+
+                task.ColumnId = request.NewColumnId;
+            }
+
+            // 2. Verarbeitung der Neusortierung (Reordering)
+            // Pattern Matching (is int newIndex) prüft auf null und castet sicher in einem Schritt.
+            if (request.NewOrderIndex is int newIndex && newIndex >= 0)
+            {
+                // Laden der betroffenen Aufgaben in der Zielspalte zur Index-Verschiebung
+                var siblings = await _context.TaskItems
+                    .Where(t => t.ColumnId == request.NewColumnId && t.Id != task.Id)
+                    .OrderBy(t => t.OrderIndex)
+                    .ToListAsync();
+
+                // Anpassung der Sortierreihenfolge nachfolgender Aufgaben
+                for (int i = 0; i < siblings.Count; i++)
+                {
+                    // Alle Aufgaben ab der neuen Position werden um 1 nach unten verschoben
+                    siblings[i].OrderIndex = (i >= newIndex) ? i + 1 : i;
+                }
+
+                // Zuweisung der neuen Position
+                task.OrderIndex = newIndex;
+            }
+
+            task.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("Details", new { id = taskId }); // Redirect angepasst
+            return Ok();
         }
 
+        /// <summary>
+        /// API: Liefert eine Liste aller Benutzer für Dropdown-Menüs (z.B. Zuweisung).
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetAssignableUsers()
+        {
+            // Projektion auf anonymes Objekt reduziert die Datenlast (nur ID und Name werden übertragen).
+            var users = await _context.Users
+                .Select(u => new { id = u.Id, userName = u.UserName })
+                .AsNoTracking()
+                .ToListAsync();
+
+            return Json(users);
+        }
     }
 }

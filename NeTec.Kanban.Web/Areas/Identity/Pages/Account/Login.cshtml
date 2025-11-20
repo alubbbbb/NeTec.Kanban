@@ -1,0 +1,41 @@
+﻿@page
+@model LoginModel
+
+@{
+    ViewData["Title"] = "Login";
+    Layout = "/Views/Shared/_AuthLayout.cshtml"; // <--- Nutzt unser neues Design
+}
+
+<form id="account" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3 small text-center" role="alert"></div>
+
+    <div class="form-floating mb-3">
+        <input asp-for="Input.Email" class="form-control" autocomplete="username" placeholder="name@example.com" />
+        <label asp-for="Input.Email">E-Mail Adresse</label>
+        <span asp-validation-for="Input.Email" class="text-danger small"></span>
+    </div>
+
+    <div class="form-floating mb-3">
+        <input asp-for="Input.Password" class="form-control" autocomplete="current-password" placeholder="password" />
+        <label asp-for="Input.Password">Passwort</label>
+        <span asp-validation-for="Input.Password" class="text-danger small"></span>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="form-check">
+            <input asp-for="Input.RememberMe" class="form-check-input" />
+            <label asp-for="Input.RememberMe" class="form-check-label small">Merken</label>
+        </div>
+    </div>
+
+    <button id="login-submit" type="submit" class="w-100 btn btn-primary btn-lg mb-3">Anmelden</button>
+
+    <div class="text-center">
+        <span class="small text-muted">Noch kein Konto?</span>
+        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="small fw-bold text-decoration-none text-dark">Jetzt registrieren</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

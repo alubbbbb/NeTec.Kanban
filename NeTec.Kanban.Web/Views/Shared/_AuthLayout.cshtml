@@ -1,0 +1,101 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - NeTec Kanban</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/NeTec.Kanban.Web.styles.css" asp-append-version="true" />
+
+    <style>
+        /* Spezifische Styles für Auth-Seiten */
+        body {
+            background-color: #f8f9fa; /* Leichter Hintergrund */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Mindesthöhe für Footer unten */
+        }
+
+        .auth-container {
+            max-width: 450px;
+            margin: auto; /* Zentriert horizontal */
+            padding: 2.5rem;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Sanfter Schatten */
+            text-align: center;
+        }
+
+        .auth-logo-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            color: #212529;
+            text-decoration: none;
+        }
+
+            .auth-logo-brand img {
+                height: 40px;
+                margin-right: 10px;
+            }
+
+            .auth-logo-brand span {
+                font-size: 1.8rem;
+                font-weight: 700;
+            }
+
+        .auth-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #343a40;
+        }
+
+        .form-floating > label {
+            padding-left: 0.75rem;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+            border-color: #0d6efd;
+        }
+
+        .btn-primary {
+            background-color: #0d6efd; /* Blau als Primärfarbe */
+            border-color: #0d6efd;
+        }
+
+            .btn-primary:hover {
+                background-color: #0b5ed7;
+                border-color: #0a58ca;
+            }
+
+        .auth-footer {
+            margin-top: auto;
+            padding: 1.5rem 0;
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <a class="auth-logo-brand" asp-controller="Board" asp-action="Index">
+            <img src="~/img/logo.png" alt="NeTec Logo" />
+            <span>NeTec Kanban</span>
+        </a>
+        @RenderBody()
+    </div>
+
+    <footer class="auth-footer">
+        &copy; @DateTime.Now.Year - NeTec Kanban WebApp - IHK Abschlussprojekt
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

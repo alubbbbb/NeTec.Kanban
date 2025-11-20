@@ -19,6 +19,8 @@ public class TaskDetailsViewModel
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
+    public string FullName { get; set; }
+
     public List<TaskCommentViewModel> Comments { get; set; } = new();
 }
 

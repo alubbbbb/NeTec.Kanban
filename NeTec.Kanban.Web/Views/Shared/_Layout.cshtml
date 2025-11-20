@@ -5,83 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - NeTec Kanban</title>
 
-    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Toastr CSS für Benachrichtigungen -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
-    <!-- Deine eigene, benutzerdefinierte CSS-Datei -->
+
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <link rel="stylesheet" href="~/NeTec.Kanban.Web.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header class="navbar navbar-light bg-white border-bottom shadow-sm px-3">
+    @{
+        var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
+        string ActiveClass(string controller) => string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    }
+
+    <header class="navbar navbar-light bg-white border-bottom shadow-sm px-3 sticky-top">
         <div class="container-fluid d-flex align-items-center justify-content-between">
-            <!-- Logo und Markenname -->
+
             <a class="navbar-brand d-flex align-items-center" asp-controller="Board" asp-action="Index">
                 <img src="~/img/logo.png" alt="NeTec Logo" class="logo-img" />
                 <span class="ms-2 fw-semibold text-dark d-none d-sm-inline">NeTec Kanban</span>
             </a>
 
-            <!-- Login/Logout Partial View - Der saubere Weg -->
             <partial name="_LoginPartial" />
         </div>
     </header>
 
-    <div class="d-flex">
-        <!-- Sidebar -->
+    <div class="d-flex wrapper">
+
         <nav class="sidebar bg-white border-end">
-            <div class="p-3">
-                <div class="fw-bold fs-5 mb-3">NeTec</div>
-                <small class="text-uppercase text-muted fw-semibold ms-1 d-block mb-2" style="font-size:0.75rem;">Navigation</small>
+            <div class="p-3 position-sticky" style="top: 80px;">
+                <div class="fw-bold fs-5 mb-3 px-3">NeTec</div>
+
+                <small class="text-uppercase text-muted fw-semibold ms-1 d-block mb-2 px-3" style="font-size:0.75rem;">
+                    Hauptmenü
+                </small>
+
                 <ul class="nav flex-column">
-                    <li class="nav-item"><a class="nav-link active" asp-controller="Board" asp-action="Index">Alle Boards</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="User" asp-action="Index">Benutzerverwaltung</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="Settings" asp-action="Index">Einstellungen</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link @ActiveClass("Board") @ActiveClass("Task")" asp-controller="Board" asp-action="Index">
+                            <i class="bi bi-kanban me-2"></i> Alle Boards
+                        </a>
+                    </li>
+
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <li class="nav-item mt-3">
+                            <small class="text-uppercase text-muted fw-semibold ms-1 d-block mb-2 px-3" style="font-size:0.75rem;">Verwaltung</small>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @ActiveClass("Admin") text-danger" asp-controller="Admin" asp-action="Index">
+                                <i class="bi bi-shield-lock me-2"></i> Benutzerverwaltung
+                            </a>
+                        </li>
+                    }
+
                 </ul>
             </div>
         </nav>
 
-        <!-- Hauptinhaltsbereich -->
-        <main class="main-content flex-grow-1 p-4">
+        <main class="main-content flex-grow-1 p-4 bg-light">
             @RenderBody()
         </main>
     </div>
 
-    <!-- Footer -->
-    <footer class="text-center py-3 mt-auto border-top">
-        © @DateTime.Now.Year - NeTec Kanban WebApp
+    <footer class="text-center py-3 mt-auto border-top bg-white small text-muted">
+        &copy; @DateTime.Now.Year - NeTec Kanban WebApp - IHK Abschlussprojekt
     </footer>
 
-    <!-- ========================= SCRIPTS ========================= -->
-    <!-- Wichtige Bibliotheken -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
-    <!-- Initialisierung der Toastr-Benachrichtigungen für TempData -->
     <script>
         $(document).ready(function () {
             toastr.options = {
                 "positionClass": "toast-bottom-right",
                 "preventDuplicates": true,
                 "progressBar": true,
-                "timeOut": 4000
+                "timeOut": 5000,
+                "closeButton": true
             };
 
+            // Übernahme von TempData Nachrichten aus dem Controller
             var successMessage = '@(TempData["SuccessMessage"] as string)';
-            if (successMessage) {
-                toastr.success(successMessage);
-            }
+            if (successMessage) toastr.success(successMessage);
 
             var errorMessage = '@(TempData["ErrorMessage"] as string)';
-            if (errorMessage) {
-                toastr.error(errorMessage);
-            }
+            if (errorMessage) toastr.error(errorMessage);
         });
     </script>
 
-    <!-- Platzhalter für seiten-spezifische Skripte (wie in Index.cshtml) -->
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
