@@ -39,6 +39,10 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
+// API-Explorer und Swagger-Generator registrieren
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
 
 // ====================================================
@@ -55,6 +59,16 @@ else
     app.UseExceptionHandler("/Home/Error");
     // HSTS (HTTP Strict Transport Security) für Produktionsumgebungen
     app.UseHsts();
+}
+
+// Swagger-UI aktivieren (Auch im Release-Modus für die IHK-Präsentation sinnvoll)
+// if (app.Environment.IsDevelopment()) // <-- Optional: if wegnehmen, damit es immer geht
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "NeTec Kanban API v1");
+    });
 }
 
 app.UseHttpsRedirection();
