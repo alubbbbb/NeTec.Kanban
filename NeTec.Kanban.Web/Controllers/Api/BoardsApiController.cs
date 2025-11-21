@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using NeTec.Kanban.Domain.Entities;
 using NeTec.Kanban.Infrastructure.Data;
-using NeTec.Kanban.Web.Models.Api;
+using NeTec.Kanban.Web.Models.DTOs;
 
 namespace NeTec.Kanban.Web.Controllers.Api
 {

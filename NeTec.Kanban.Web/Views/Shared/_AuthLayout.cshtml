@@ -3,96 +3,73 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - NeTec Kanban</title>
+    <title>@ViewData["Title"] - NeTec Kanban</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/NeTec.Kanban.Web.styles.css" asp-append-version="true" />
 
     <style>
-        /* Spezifische Styles für Auth-Seiten */
-        body {
-            background-color: #f8f9fa; /* Leichter Hintergrund */
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh; /* Mindesthöhe für Footer unten */
-        }
-
-        .auth-container {
-            max-width: 450px;
-            margin: auto; /* Zentriert horizontal */
-            padding: 2.5rem;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Sanfter Schatten */
-            text-align: center;
-        }
-
-        .auth-logo-brand {
+        body.auth-bg {
+            background-color: #f8f9fa;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 2rem;
-            color: #212529;
-            text-decoration: none;
+            min-height: 100vh;
         }
 
-            .auth-logo-brand img {
-                height: 40px;
-                margin-right: 10px;
-            }
-
-            .auth-logo-brand span {
-                font-size: 1.8rem;
-                font-weight: 700;
-            }
-
-        .auth-title {
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            color: #343a40;
+        .auth-card {
+            width: 100%;
+            max-width: 420px;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
 
-        .form-floating > label {
-            padding-left: 0.75rem;
+        .auth-header {
+            text-align: center;
+            padding-bottom: 1.5rem;
         }
 
-        .form-control:focus {
-            box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
-            border-color: #0d6efd;
+        .auth-logo {
+            height: 40px;
+            margin-bottom: 1rem;
+        }
+
+        .form-floating > .form-control:focus {
+            border-color: #ffc107;
+            box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
         }
 
         .btn-primary {
-            background-color: #0d6efd; /* Blau als Primärfarbe */
-            border-color: #0d6efd;
+            background-color: #ffc107;
+            border-color: #ffc107;
+            color: #000;
+            font-weight: 600;
         }
 
             .btn-primary:hover {
-                background-color: #0b5ed7;
-                border-color: #0a58ca;
+                background-color: #e0a800;
+                border-color: #d39e00;
             }
-
-        .auth-footer {
-            margin-top: auto;
-            padding: 1.5rem 0;
-            text-align: center;
-            color: #6c757d;
-            font-size: 0.85rem;
-        }
     </style>
 </head>
-<body>
-    <div class="auth-container">
-        <a class="auth-logo-brand" asp-controller="Board" asp-action="Index">
-            <img src="~/img/logo.png" alt="NeTec Logo" />
-            <span>NeTec Kanban</span>
-        </a>
+<body class="auth-bg">
+    <div class="auth-card bg-white p-4 p-md-5">
+        <div class="auth-header">
+            <a asp-area="" asp-controller="Board" asp-action="Index">
+                <img src="~/img/logo.png" alt="NeTec" class="auth-logo" />
+            </a>
+            <h4 class="fw-bold mt-2">@ViewData["Title"]</h4>
+            <p class="text-muted small">NeTec Kanban System</p>
+        </div>
         @RenderBody()
-    </div>
 
-    <footer class="auth-footer">
-        &copy; @DateTime.Now.Year - NeTec Kanban WebApp - IHK Abschlussprojekt
-    </footer>
+        <div class="text-center mt-4 pt-3 border-top">
+            <p class="small text-muted mb-0">
+                &copy; @DateTime.Now.Year - IHK Abschlussprojekt
+            </p>
+        </div>
+    </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

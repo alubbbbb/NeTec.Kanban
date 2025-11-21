@@ -1,20 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NeTec.Kanban.Domain.Entities
 {
+    /// <summary>
+    /// Repräsentiert ein Kanban-Board.
+    /// Dient als Container für Spalten und Aufgaben und ist einem Benutzer zugeordnet.
+    /// </summary>
     public class Board
     {
         [Key]
         public int Id { get; set; }
 
-        // FK zum Besitzer (Identity-User)
+        /// <summary>
+        /// Fremdschlüssel zum Ersteller/Besitzer des Boards.
+        /// </summary>
         [Required]
         public string UserId { get; set; } = null!;
 
-        // Navigation Property → Owner
+        /// <summary>
+        /// Navigation-Property zum Benutzerobjekt.
+        /// </summary>
         [ForeignKey(nameof(UserId))]
         public ApplicationUser? Owner { get; set; }
 
@@ -25,10 +31,16 @@ namespace NeTec.Kanban.Domain.Entities
         [StringLength(2000, ErrorMessage = "Die Beschreibung darf maximal 2000 Zeichen lang sein.")]
         public string? Description { get; set; }
 
-        public DateTime CreatedAt { get; set; }
+        [DataType(DataType.DateTime)]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [DataType(DataType.DateTime)]
         public DateTime? UpdatedAt { get; set; }
 
-        // Navigation Property → Columns
+        /// <summary>
+        /// Liste der zugehörigen Spalten.
+        /// Wird initialisiert, um NullReferenceExceptions zu vermeiden.
+        /// </summary>
         public ICollection<Column> Columns { get; set; } = new List<Column>();
     }
 }

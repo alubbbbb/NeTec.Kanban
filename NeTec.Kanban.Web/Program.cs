@@ -6,18 +6,19 @@ using NeTec.Kanban.Infrastructure.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // ====================================================
-// 1. SERVICE-REGISTRIERUNG (DEPENDENCY INJECTION)
+// 1. DI-CONTAINER KONFIGURATION (SERVICES)
 // ====================================================
 
-// Konfiguration des Datenbankkontexts für Entity Framework Core (SQL Server)
+// Konfiguration des Entity Framework Core Datenbankkontexts (SQL Server).
+// Der ConnectionString wird aus der appsettings.json bezogen.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                       ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                       ?? throw new InvalidOperationException("Verbindungszeichenfolge 'DefaultConnection' nicht gefunden.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// Einrichtung von ASP.NET Core Identity für Authentifizierung und Benutzerverwaltung.
-// Die Konfiguration umfasst Standard-Identity-UI, Rollenunterstützung (RBAC) und EF Core Stores.
+// Einrichtung des Identity-Systems für Authentifizierung und Autorisierung.
+// Konfiguration umfasst Benutzerverwaltung, Rollen (RBAC) und EF-Core-Integration.
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false; // Für interne Zwecke deaktiviert
@@ -28,18 +29,18 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultUI();
 
-// Anpassung der Cookie-Pfade für Login und Zugriffverweigerung
+// Anpassung der Cookie-Pfade für Login- und Zugriffsverweigerung.
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Identity/Account/Login";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
 });
 
-// Registrierung der MVC-Controller mit Views sowie Razor Pages (für Identity UI)
+// Registrierung von MVC-Controllern mit Views sowie Razor Pages (für Identity UI).
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-// API-Explorer und Swagger-Generator registrieren
+// Konfiguration für API-Dokumentation (Swagger/OpenAPI).
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -49,7 +50,7 @@ var app = builder.Build();
 // 2. HTTP REQUEST PIPELINE (MIDDLEWARE)
 // ====================================================
 
-// Fehlerbehandlung und Sicherheit in Abhängigkeit der Umgebung
+// Fehlerbehandlung in Abhängigkeit der Laufzeitumgebung.
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -57,59 +58,57 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    // HSTS (HTTP Strict Transport Security) für Produktionsumgebungen
+    // HTTP Strict Transport Security (HSTS) für erhöhte Sicherheit in Produktion.
     app.UseHsts();
 }
 
-// Swagger-UI aktivieren (Auch im Release-Modus für die IHK-Präsentation sinnvoll)
-// if (app.Environment.IsDevelopment()) // <-- Optional: if wegnehmen, damit es immer geht
+// Aktivierung der Swagger-UI zur API-Dokumentation und -Testung.
+// Wird hier auch im Release-Modus aktiviert, um die Schnittstelle präsentieren zu können.
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "NeTec Kanban API v1");
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "NeTec Kanban API v1");
+});
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
 
-// Aktivierung der Authentifizierungs- und Autorisierungs-Middleware.
-// Die Reihenfolge ist hier essenziell (Auth vor Authorization).
+// Aktivierung der Authentifizierung und Autorisierung.
+// Die Reihenfolge ist technisch zwingend: Erst authentifizieren, dann autorisieren.
 app.UseAuthentication();
 app.UseAuthorization();
 
 // ====================================================
-// 3. ROUTING KONFIGURATION
+// 3. ROUTING KONFIGURATION (ENDPOINTS)
 // ====================================================
 
 // Route für Areas (z.B. Admin-Bereich).
-// Muss VOR der Standardroute definiert werden, um korrekt aufgelöst zu werden.
+// Muss vor der Standard-Route definiert werden, um spezifische Area-Controller korrekt aufzulösen.
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
-// Standardroute für die Anwendung (Kanban Board als Startseite)
+// Standard-Route für die Anwendung (Kanban Board als Einstiegspunkt).
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Board}/{action=Index}/{id?}");
 
-// Routing für Identity Razor Pages
+// Routing für Identity Razor Pages (Login/Register).
 app.MapRazorPages();
 
 // ====================================================
 // 4. DATENBANK-INITIALISIERUNG (SEEDING)
 // ====================================================
 
-// Initialisierung von Stammdaten (Rollen, Admin-User) beim Anwendungsstart
+// Initialisierung von Stammdaten (Rollen, Admin-User) beim Anwendungsstart.
+// Verwendet einen temporären Scope, um Services aufzulösen.
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
-        // Führt den Seeder aus, um sicherzustellen, dass Admin und Rollen existieren
         await DbSeeder.SeedAsync(services);
     }
     catch (Exception ex)
@@ -119,5 +118,5 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Starten der Anwendung
+// Starten der Webanwendung
 app.Run();

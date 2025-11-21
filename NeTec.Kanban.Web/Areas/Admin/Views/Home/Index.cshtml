@@ -6,12 +6,10 @@
 <div class="container-fluid py-4 ps-lg-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-
         <div>
             <h1 class="fw-bold mb-0">Benutzerverwaltung</h1>
             <p class="text-muted small mb-0">Übersicht aller registrierten Konten und Rollen.</p>
         </div>
-
         <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#createUserModal">
             <i class="bi bi-person-plus-fill me-2"></i> Benutzer anlegen
         </button>
@@ -86,28 +84,23 @@
             <div class="modal-body">
                 <form action="@Url.Action("CreateUser", "Home", new { area = "Admin" })" method="post">
                     @Html.AntiForgeryToken()
-
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted">VOLLSTÄNDIGER NAME</label>
                         <input name="fullName" class="form-control" required placeholder="z.B. Max Mustermann" />
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted">E-MAIL ADRESSE</label>
                         <input name="email" type="email" class="form-control" required placeholder="mitarbeiter@netec.de" />
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted">START-PASSWORT</label>
                         <input name="password" type="password" class="form-control" required value="Start123!" />
-                        <div class="form-text text-muted small">Start Passwort</div>
+                        <div class="form-text text-muted small">Der Benutzer sollte dieses Passwort nach dem ersten Login ändern.</div>
                     </div>
-
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="isAdminCheck" name="isAdmin" value="true">
                         <label class="form-check-label small fw-bold" for="isAdminCheck">Soll Administrator sein?</label>
                     </div>
-
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <button type="button" class="btn btn-light text-muted" data-bs-dismiss="modal">Abbrechen</button>
                         <button type="submit" class="btn btn-primary fw-bold px-4">Anlegen</button>

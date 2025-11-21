@@ -22,6 +22,7 @@ namespace NeTec.Kanban.Infrastructure.Data
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
             // 1. Definition und Erstellung der Systemrollen
+            // Diese Rollen steuern den Zugriff auf Bereiche wie das Admin-Panel.
             var roles = new[] { "Admin", "User" };
 
             foreach (var roleName in roles)
@@ -34,6 +35,7 @@ namespace NeTec.Kanban.Infrastructure.Data
             }
 
             // 2. Erstellung des Standard-Administrators
+            // Dieser Account dient als initialer Zugang für die Systemverwaltung.
             var adminEmail = "admin@netec.de";
             var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
@@ -43,12 +45,12 @@ namespace NeTec.Kanban.Infrastructure.Data
                 {
                     UserName = adminEmail,
                     Email = adminEmail,
-                    EmailConfirmed = true,
-                    FullName = "System Administrator",
+                    EmailConfirmed = true, // Wichtig, damit Login sofort möglich ist
+                    FullName = "System Administrator", // Für die Anzeige im UI
                     CreatedAt = DateTime.UtcNow
                 };
 
-                // Erstellung des Benutzers mit initialem Passwort
+                // Erstellung des Benutzers mit einem sicheren Initialpasswort
                 var result = await userManager.CreateAsync(newAdmin, "Admin123!");
 
                 if (result.Succeeded)

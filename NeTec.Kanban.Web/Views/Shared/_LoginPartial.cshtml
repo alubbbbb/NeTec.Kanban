@@ -1,11 +1,16 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @using NeTec.Kanban.Domain.Entities
 
+@* Teilansicht: Header-Authentifizierung.
+    Steuert die Anzeige von Benutzerinformationen und Login/Logout-Schaltflächen.
+*@
+
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 
 @if (SignInManager.IsSignedIn(User))
 {
+    // Abrufen des aktuellen Benutzerobjekts für die Anzeige des vollen Namens
     var appUser = await UserManager.GetUserAsync(User);
     var displayName = appUser?.FullName ?? User.Identity?.Name;
 
@@ -25,8 +30,9 @@ else
         <a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="/" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-box-arrow-in-right me-1"></i> Login
         </a>
-        <a asp-area="Identity" asp-page="/Account/Register" asp-route-returnUrl="/" class="btn btn-primary btn-sm fw-bold">
+        @* <a asp-area="Identity" asp-page="/Account/Register" asp-route-returnUrl="/" class="btn btn-primary btn-sm fw-bold">
             Registrieren
-        </a>
+        </a> 
+        *@
     </div>
 }

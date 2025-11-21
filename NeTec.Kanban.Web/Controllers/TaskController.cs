@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using NeTec.Kanban.Domain.Entities;
 using NeTec.Kanban.Domain.Entities.ViewModel;
 using NeTec.Kanban.Infrastructure.Data;
+using NeTec.Kanban.Web.Models.DTOs;
 
 namespace NeTec.Kanban.Web.Controllers
 {
     /// <summary>
     /// Controller zur Verwaltung von Aufgaben (Tasks).
-    /// Behandelt die Anzeige von Details, CRUD-Operationen sowie API-Endpunkte
-    /// für Drag & Drop und asynchrone Bearbeitung.
+    /// Implementiert Dashboard-Ansichten, CRUD-Logik und API-Endpunkte für Drag & Drop.
     /// </summary>
     public class TaskController : Controller
     {
@@ -24,33 +24,51 @@ namespace NeTec.Kanban.Web.Controllers
         }
 
         // ============================================================
-        // MVC VIEW ACTIONS (Seitenaufrufe)
+        // VIEWS & DASHBOARDS
         // ============================================================
 
         /// <summary>
-        /// Lädt die Detailansicht einer spezifischen Aufgabe inklusive aller relationalen Daten
-        /// (Spalte, Board, zugewiesener Benutzer, Kommentare).
+        /// Zeigt ein Dashboard aller Aufgaben an, die dem aktuellen Benutzer zugewiesen sind.
+        /// Diese Ansicht aggregiert Aufgaben über alle Boards hinweg.
         /// </summary>
-        /// <param name="id">Die ID der anzuzeigenden Aufgabe.</param>
-        /// <returns>View mit TaskDetailsViewModel oder NotFound.</returns>
+        [HttpGet]
+        public async Task<IActionResult> MyTasks()
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Redirect("/Identity/Account/Login");
+
+            var myTasks = await _context.TaskItems
+                .Include(t => t.Column).ThenInclude(c => c.Board)
+                .Include(t => t.AssignedTo)
+                .Where(t => t.UserId == userId)
+                .OrderBy(t => t.DueDate)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return View(myTasks);
+        }
+
+        /// <summary>
+        /// Lädt die Detailansicht einer Aufgabe.
+        /// Berechtigung: Zugriff haben Board-Besitzer ODER zugewiesene Bearbeiter.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
             var userId = _userManager.GetUserId(User);
             if (userId == null) return Redirect("/Identity/Account/Login");
 
-            // Eager Loading der Entität zur Vermeidung von N+1 Problemen.
-            // AsNoTracking wird zur Performance-Optimierung verwendet, da hier nur Lesezugriff erfolgt.
             var task = await _context.TaskItems
                 .Include(t => t.Column).ThenInclude(c => c.Board)
                 .Include(t => t.AssignedTo)
                 .Include(t => t.Comments).ThenInclude(c => c.User)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == id && t.Column.Board.UserId == userId);
+                // Erweiterte Prüfung: Owner oder Assignee
+                .FirstOrDefaultAsync(t => t.Id == id && (t.Column.Board.UserId == userId || t.UserId == userId));
 
             if (task == null) return NotFound();
 
-            // Mapping auf ViewModel zur Entkopplung von Datenbank-Entität und Präsentationsschicht
+            // ViewModel Mapping
             var vm = new TaskDetailsViewModel
             {
                 TaskId = task.Id,
@@ -60,30 +78,32 @@ namespace NeTec.Kanban.Web.Controllers
                 DueDate = task.DueDate,
                 PlannedTime = task.EstimatedHours,
                 ActualTime = task.RemainingHours,
-                ColumnName = task.Column.Titel,
+
+                ColumnName = task.Column?.Titel ?? "Unbekannt",
                 ColumnId = task.ColumnId,
                 BoardId = task.Column.BoardId,
+
                 AssignedUserId = task.UserId,
-                AssignedUserName = task.AssignedTo?.UserName ?? "Nicht zugewiesen",
+                AssignedUserName = task.AssignedTo?.FullName ?? task.AssignedTo?.UserName ?? "Nicht zugewiesen",
+
                 CreatedAt = task.CreatedAt,
                 UpdatedAt = task.UpdatedAt,
-                FullName = task.AssignedTo.FullName,
-                Comments = task.Comments
-                    .OrderByDescending(c => c.CreatedAt)
-                    .Select(c => new TaskCommentViewModel
-                    {
-                        UserName = c.User?.UserName ?? "Unbekannt",
-                        Text = c.Content,
-                        CreatedAt = c.CreatedAt
-                    }).ToList()
+
+                Comments = task.Comments.OrderByDescending(c => c.CreatedAt).Select(c => new TaskCommentViewModel
+                {
+                    UserName = c.User?.FullName ?? c.User?.UserName ?? "Unbekannt",
+                    Text = c.Content,
+                    CreatedAt = c.CreatedAt
+                }).ToList()
             };
 
             return View(vm);
         }
 
-        /// <summary>
-        /// Fügt einen neuen Kommentar zu einer Aufgabe hinzu.
-        /// </summary>
+        // ============================================================
+        // INTERAKTIONEN (Kommentare, Löschen)
+        // ============================================================
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddComment(int taskId, string text)
@@ -91,45 +111,59 @@ namespace NeTec.Kanban.Web.Controllers
             var userId = _userManager.GetUserId(User);
             if (userId == null) return Redirect("/Identity/Account/Login");
 
-            if (string.IsNullOrWhiteSpace(text))
-                return RedirectToAction("Details", new { id = taskId });
+            if (string.IsNullOrWhiteSpace(text)) return RedirectToAction("Details", new { id = taskId });
 
-            // Validierung: Existiert der Task und hat der Benutzer Zugriff darauf?
-            // AnyAsync ist performanter als das Laden des gesamten Objekts.
+            // Prüfung, ob Benutzer berechtigt ist, auf diesem Ticket zu kommentieren
             var taskExists = await _context.TaskItems
                 .Include(t => t.Column).ThenInclude(c => c.Board)
-                .AnyAsync(t => t.Id == taskId && t.Column.Board.UserId == userId);
+                .AnyAsync(t => t.Id == taskId && (t.Column.Board.UserId == userId || t.UserId == userId));
 
             if (!taskExists) return Unauthorized();
 
-            var comment = new Comment
+            _context.Comments.Add(new Comment
             {
                 TaskItemId = taskId,
                 UserId = userId,
                 Content = text,
                 CreatedAt = DateTime.UtcNow
-            };
+            });
 
-            _context.Comments.Add(comment);
             await _context.SaveChangesAsync();
-
             return RedirectToAction("Details", new { id = taskId });
         }
 
+        /// <summary>
+        /// Löscht eine Aufgabe. Nur der Board-Besitzer ist hierzu berechtigt.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteTask(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Redirect("/Identity/Account/Login");
+
+            // Sicherheitsprüfung: Nur Owner darf löschen (Assignee darf nur bearbeiten)
+            var task = await _context.TaskItems
+                .Include(t => t.Column).ThenInclude(c => c.Board)
+                .FirstOrDefaultAsync(t => t.Id == id && t.Column.Board.UserId == userId);
+
+            if (task == null) return NotFound();
+
+            int boardId = task.Column.BoardId;
+            _context.TaskItems.Remove(task);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Details", "Board", new { id = boardId });
+        }
+
         // ============================================================
-        // API ENDPOINTS (AJAX / JSON)
+        // API ENDPOINTS (AJAX/JSON für Frontend-Interaktion)
         // ============================================================
 
-        /// <summary>
-        /// API: Liefert die Rohdaten einer Aufgabe für das Edit-Modal (Client-Side Rendering).
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetTask(int id)
         {
-            var t = await _context.TaskItems
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == id);
-
+            var t = await _context.TaskItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
             if (t == null) return NotFound();
 
             return Json(new
@@ -146,26 +180,20 @@ namespace NeTec.Kanban.Web.Controllers
             });
         }
 
-        /// <summary>
-        /// API: Erstellt eine neue Aufgabe basierend auf JSON-Daten.
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] EditTaskRequest req)
         {
             var userId = _userManager.GetUserId(User);
             if (userId == null) return Unauthorized();
+            if (string.IsNullOrWhiteSpace(req.Title)) return BadRequest("Titel fehlt.");
 
-            if (string.IsNullOrWhiteSpace(req.Title))
-                return BadRequest("Titel erforderlich.");
-
-            // Validierung der Spaltenzugehörigkeit (Sicherheitsaspekt)
+            // Prüfen, ob User Zugriff auf das Board hat
             var column = await _context.Columns
                 .Include(c => c.Board)
                 .FirstOrDefaultAsync(c => c.Id == req.ColumnId && c.Board!.UserId == userId);
 
-            if (column == null) return NotFound("Spalte nicht gefunden oder kein Zugriff.");
+            if (column == null) return NotFound();
 
-            // Ermittlung des aktuellen Max-Index zur korrekten Einsortierung am Ende der Liste
             var maxOrder = await _context.TaskItems
                 .Where(t => t.ColumnId == req.ColumnId)
                 .MaxAsync(t => (int?)t.OrderIndex) ?? 0;
@@ -187,29 +215,22 @@ namespace NeTec.Kanban.Web.Controllers
 
             _context.TaskItems.Add(task);
             await _context.SaveChangesAsync();
-
             return Ok(new { id = task.Id });
         }
 
-        /// <summary>
-        /// API: Aktualisiert die Stammdaten einer Aufgabe.
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> EditTask([FromBody] EditTaskRequest req)
         {
             var userId = _userManager.GetUserId(User);
             if (userId == null) return Unauthorized();
 
-            if (string.IsNullOrWhiteSpace(req.Title))
-                return BadRequest("Titel erforderlich.");
-
+            // Zugriff: Owner ODER Assignee
             var t = await _context.TaskItems
                 .Include(x => x.Column).ThenInclude(c => c.Board)
-                .FirstOrDefaultAsync(x => x.Id == req.Id && x.Column.Board.UserId == userId);
+                .FirstOrDefaultAsync(x => x.Id == req.Id && (x.Column.Board.UserId == userId || x.UserId == userId));
 
             if (t == null) return NotFound();
 
-            // Aktualisierung der Eigenschaften
             t.Title = req.Title;
             t.Description = req.Description;
             t.Priority = req.Priority ?? "Medium";
@@ -223,10 +244,6 @@ namespace NeTec.Kanban.Web.Controllers
             return Ok(new { id = t.Id });
         }
 
-        /// <summary>
-        /// API: Verarbeitet Drag & Drop Aktionen.
-        /// Behandelt sowohl das Verschieben in eine andere Spalte als auch die Neusortierung innerhalb einer Spalte.
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> UpdateTaskColumn([FromBody] UpdateTaskRequest request)
         {
@@ -235,53 +252,47 @@ namespace NeTec.Kanban.Web.Controllers
 
             var task = await _context.TaskItems
                 .Include(t => t.Column).ThenInclude(c => c.Board)
-                .FirstOrDefaultAsync(t => t.Id == request.TaskId && t.Column.Board.UserId == userId);
+                .FirstOrDefaultAsync(t => t.Id == request.TaskId && (t.Column.Board.UserId == userId || t.UserId == userId));
 
             if (task == null) return NotFound();
 
-            // 1. Verarbeitung von Spaltenwechseln
+            // Spaltenwechsel: Sicherstellen, dass Zielspalte valide ist
             if (task.ColumnId != request.NewColumnId)
             {
-                // Validierung der Zielspalte
-                var targetExists = await _context.Columns
+                var targetCol = await _context.Columns
                     .Include(c => c.Board)
-                    .AnyAsync(c => c.Id == request.NewColumnId && c.Board.UserId == userId);
+                    .FirstOrDefaultAsync(c => c.Id == request.NewColumnId);
 
-                if (!targetExists) return NotFound();
+                // Sicherheit: Zielspalte muss zum selben Board gehören (oder User ist Owner)
+                if (targetCol == null || (targetCol.BoardId != task.Column.BoardId && targetCol.Board.UserId != userId))
+                    return NotFound();
 
                 task.ColumnId = request.NewColumnId;
             }
 
-            // 2. Verarbeitung der Neusortierung (Reordering)
-            // Pattern Matching (is int newIndex) prüft auf null und castet sicher in einem Schritt.
+            // Neusortierung via Pattern Matching
             if (request.NewOrderIndex is int newIndex && newIndex >= 0)
             {
-                // Laden der betroffenen Aufgaben in der Zielspalte zur Index-Verschiebung
                 var siblings = await _context.TaskItems
                     .Where(t => t.ColumnId == request.NewColumnId && t.Id != task.Id)
                     .OrderBy(t => t.OrderIndex)
                     .ToListAsync();
 
-                // Anpassung der Sortierreihenfolge nachfolgender Aufgaben
                 for (int i = 0; i < siblings.Count; i++)
                 {
-                    // Alle Aufgaben ab der neuen Position werden um 1 nach unten verschoben
                     siblings[i].OrderIndex = (i >= newIndex) ? i + 1 : i;
                 }
-
-                // Zuweisung der neuen Position
                 task.OrderIndex = newIndex;
             }
 
             task.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
-
             return Ok();
         }
 
         /// <summary>
-        /// API: Liefert Benutzerliste für Zuweisungs-Dropdowns.
-        /// Priorisiert den vollen Namen. Falls dieser fehlt, wird der Benutzername (Email) genutzt.
+        /// Liefert die Liste der Benutzer für Dropdowns.
+        /// Bevorzugt den vollen Namen (FullName) vor dem Benutzernamen (Email).
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetAssignableUsers()
@@ -291,49 +302,12 @@ namespace NeTec.Kanban.Web.Controllers
                 .Select(u => new
                 {
                     id = u.Id,
-                    // prüfen auf null UND auf leeren String.
-                    // Wenn FullName da ist -> nimm FullName. Sonst -> nimm UserName.
                     userName = (u.FullName != null && u.FullName != "") ? u.FullName : u.UserName
                 })
-                // Optional: Sortieren damit es im Dropdown alphabetisch ist
                 .OrderBy(x => x.userName)
                 .ToListAsync();
 
             return Json(users);
-        }
-        /// <summary>
-        /// Löscht eine spezifische Aufgabe und leitet zur Board-Ansicht zurück.
-        /// </summary>
-        /// <param name="id">Die ID der zu löschenden Aufgabe.</param>
-        /// <returns>Redirect zur Board-Ansicht oder Fehlerstatus.</returns>
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteTask(int id)
-        {
-            var userId = _userManager.GetUserId(User);
-            if (userId == null) return Redirect("/Identity/Account/Login");
-
-            // Laden der Aufgabe inklusive Spalten-Informationen, um die Board-ID für den Redirect zu erhalten.
-            // Gleichzeitig wird geprüft, ob der Benutzer berechtigt ist (Besitzer des Boards).
-            var task = await _context.TaskItems
-                .Include(t => t.Column)
-                .ThenInclude(c => c.Board)
-                .FirstOrDefaultAsync(t => t.Id == id && t.Column.Board.UserId == userId);
-
-            if (task == null)
-            {
-                // Aufgabe nicht gefunden oder Benutzer hat keine Berechtigung.
-                return NotFound();
-            }
-
-            // Speichern der Board-ID für den Redirect, bevor das Objekt gelöscht wird.
-            int boardId = task.Column.BoardId;
-
-            _context.TaskItems.Remove(task);
-            await _context.SaveChangesAsync();
-
-            // Rückleitung zur Detailansicht des Boards (Kanban-Board).
-            return RedirectToAction("Details", "Board", new { id = boardId });
         }
     }
 }

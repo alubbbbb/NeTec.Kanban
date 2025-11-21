@@ -79,11 +79,8 @@
                         var priorityClass = task.Priority switch { "High" => "badge-soft-high", "Medium" => "badge-soft-medium", "Low" => "badge-soft-low", _ => "bg-secondary" };
 
                         <div class="card task-card mb-2 border-0 shadow-sm" data-task-id="@task.Id">
-
                             <div class="card-body p-3 position-relative">
-
                                 <div class="d-flex justify-content-between align-items-start mb-2" style="min-height: 24px;">
-
                                     <h6 class="card-title fw-bold mb-0 text-dark small text-break pe-4">
                                         <a href="@Url.Action("Details", "Task", new { id = task.Id })" class="text-decoration-none text-dark stretched-link">
                                             @task.Title
@@ -91,7 +88,6 @@
                                     </h6>
 
                                     <div class="task-actions d-flex gap-1 position-relative" style="z-index: 2;">
-
                                         <button class="btn btn-sm btn-light text-primary btn-edit-task p-0 d-flex align-items-center justify-content-center"
                                                 style="width: 24px; height: 24px;"
                                                 data-task-id="@task.Id"
@@ -99,9 +95,8 @@
                                             <i class="bi bi-pencil-fill" style="font-size: 0.7rem;"></i>
                                         </button>
 
-                                        <form id="deleteForm-@task.Id" asp-controller="Task" asp-action="DeleteTask" asp-route-id="@task.Id" method="post" class="d-inline-block m-0 p-0">
+                                        <form asp-controller="Task" asp-action="DeleteTask" asp-route-id="@task.Id" method="post" class="d-inline-block m-0 p-0">
                                             @Html.AntiForgeryToken()
-
                                             <button type="button"
                                                     class="btn btn-sm btn-light text-danger btn-delete-task p-0 d-flex align-items-center justify-content-center"
                                                     style="width: 24px; height: 24px;"
@@ -113,19 +108,12 @@
                                     </div>
                                 </div>
 
-                                    <div class="mb-3"></div>
-
                                 <div class="d-flex justify-content-between align-items-center pt-2 border-top border-light">
                                     <span class="badge @priorityClass fw-normal py-1 px-2" style="font-size: 0.7rem;">@task.Priority</span>
-
                                     @if (task.AssignedTo != null)
                                     {
-                                        // FullName bevorzugen
                                         var displayName = !string.IsNullOrEmpty(task.AssignedTo.FullName) ? task.AssignedTo.FullName : task.AssignedTo.UserName;
-
-                                        <div class="rounded-circle bg-dark text-white d-flex justify-content-center align-items-center shadow-sm"
-                                             style="width: 24px; height: 24px; font-size: 10px;"
-                                             title="@displayName">
+                                        <div class="rounded-circle bg-dark text-white d-flex justify-content-center align-items-center shadow-sm" style="width: 24px; height: 24px; font-size: 10px;" title="@displayName">
                                             @displayName.Substring(0, 1).ToUpper()
                                         </div>
                                     }
@@ -153,9 +141,7 @@
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0 shadow">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title text-danger fw-bold">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Löschen?
-                </h5>
+                <h5 class="modal-title text-danger fw-bold">Löschen?</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center py-4">
@@ -175,7 +161,6 @@
         document.addEventListener("DOMContentLoaded", () => {
             const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
 
-            // Drag & Drop Logik (SortableJS)
             document.querySelectorAll(".task-list").forEach(list => {
                 new Sortable(list, {
                     group: "kanban", animation: 150, ghostClass: "sortable-ghost",
@@ -184,14 +169,11 @@
                         const colId = evt.to.closest('.column').dataset.columnId;
                         const index = Array.from(evt.to.children).indexOf(evt.item);
 
-                        // API Aufruf zum Speichern der neuen Position
                         fetch('@Url.Action("UpdateTaskColumn", "Task")', {
                             method: "POST",
                             headers: { "Content-Type": "application/json", "RequestVerificationToken": token },
                             body: JSON.stringify({ taskId: parseInt(taskId), newColumnId: parseInt(colId), newOrderIndex: index })
                         });
-
-                        // Zähler aktualisieren
                         evt.to.closest('.column').querySelector('.badge').innerText = evt.to.children.length;
                         evt.from.closest('.column').querySelector('.badge').innerText = evt.from.children.length;
                     }
@@ -199,23 +181,16 @@
             });
         });
 
-             let taskToDeleteId = null;
-
+        let taskToDeleteId = null;
         function openDeleteConfirmation(taskId) {
-            // 1. ID merken
             taskToDeleteId = taskId;
-            // 2. Modal öffnen
             new bootstrap.Modal(document.getElementById('deleteConfirmationModal')).show();
         }
 
-        // Wenn im Modal auf "Ja, löschen" geklickt wird
         document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
             if (taskToDeleteId) {
-                // 3. Das entsprechende Formular suchen und absenden
                 const form = document.getElementById('deleteForm-' + taskToDeleteId);
-                if (form) {
-                    form.submit();
-                }
+                if (form) form.submit();
             }
         });
     </script>

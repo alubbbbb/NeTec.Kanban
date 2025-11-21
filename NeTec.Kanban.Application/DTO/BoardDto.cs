@@ -1,4 +1,4 @@
-﻿namespace NeTec.Kanban.Web.Models.Api
+﻿namespace NeTec.Kanban.Web.Models.DTOs // Angepasst auf DTO Namespace
 {
     /// <summary>
     /// Datentransferobjekt für die API-Ausgabe von Boards.

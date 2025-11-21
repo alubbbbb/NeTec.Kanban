@@ -1,7 +1,6 @@
 ﻿<div class="modal fade" id="editTaskModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content shadow border-0">
-
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold">Aufgabe bearbeiten</h5>
                 <button class="btn-close" data-bs-dismiss="modal"></button>
@@ -62,25 +61,22 @@
 
 <script>
     /**
-     * Initialisierung der Modal-Logik nach Laden des DOM.
+     * Initialisierung: Lädt Benutzerdaten und registriert Events.
      */
     document.addEventListener("DOMContentLoaded", () => {
-        loadUsers();
-        setupModalEvents();
+        loadUsersAsync();
+        initializeModalEvents();
     });
 
     /**
-     * Lädt asynchron die Liste der zuweisbaren Benutzer vom Server
-     * und befüllt das Dropdown-Menü.
+     * Lädt die Benutzerliste für das Zuweisungs-Dropdown vom Server.
      */
-    function loadUsers() {
+    function loadUsersAsync() {
         fetch('/Task/GetAssignableUsers')
             .then(r => r.json())
             .then(users => {
                 const select = document.getElementById("editTaskAssignedUser");
-                // Reset der Optionen
                 select.innerHTML = '<option value="">-- Niemand --</option>';
-
                 users.forEach(u => {
                     select.innerHTML += `<option value="${u.id}">${u.userName}</option>`;
                 });
@@ -88,36 +84,32 @@
     }
 
     /**
-     * Registriert Event-Listener für Interaktionen (Öffnen, Speichern).
-     * Nutzt Event Delegation für dynamisch erstellte Buttons.
+     * Registriert Klick-Events für "Neu" und "Bearbeiten" (Event Delegation).
      */
-    function setupModalEvents() {
+    function initializeModalEvents() {
         document.body.addEventListener('click', e => {
-            // Fall: "Aufgabe erstellen" Button geklickt
+            // Neu erstellen
             const btnAdd = e.target.closest('.btn-add-task');
             if (btnAdd) {
-                resetModal();
-                // Spalten-ID aus dem Button-Attribut übernehmen
+                resetModalForm();
                 document.getElementById("editTaskColumnId").value = btnAdd.dataset.columnId;
                 new bootstrap.Modal(document.getElementById("editTaskModal")).show();
             }
 
-            // Fall: "Bearbeiten" Button geklickt
+            // Bearbeiten
             const btnEdit = e.target.closest('.btn-edit-task');
             if (btnEdit) {
-                loadTaskData(btnEdit.dataset.taskId);
+                fetchTaskDetails(btnEdit.dataset.taskId);
             }
         });
 
-        // Speicher-Button Event
-        document.getElementById("saveTaskChanges").addEventListener("click", saveTask);
+        document.getElementById("saveTaskChanges").addEventListener("click", submitTaskForm);
     }
 
     /**
-     * Setzt alle Formularfelder auf ihren Initialzustand zurück.
-     * Wird vor dem Öffnen des Modals im "Erstellen"-Modus aufgerufen.
+     * Setzt das Formular zurück.
      */
-    function resetModal() {
+    function resetModalForm() {
         document.getElementById("editTaskId").value = "";
         document.getElementById("editTaskTitle").value = "";
         document.getElementById("editTaskDescription").value = "";
@@ -129,14 +121,12 @@
     }
 
     /**
-     * Ruft die aktuellen Daten einer Aufgabe via API ab und befüllt das Formular.
-     * param {number} id - Die ID der zu ladenden Aufgabe.
+     * Lädt Task-Daten und öffnet das Modal.
      */
-    function loadTaskData(id) {
+    function fetchTaskDetails(id) {
         fetch('/Task/GetTask/' + id)
             .then(r => r.json())
             .then(data => {
-                // Mapping der API-Daten auf die Formularfelder
                 document.getElementById("editTaskId").value = data.id;
                 document.getElementById("editTaskColumnId").value = data.columnId;
                 document.getElementById("editTaskTitle").value = data.title;
@@ -147,18 +137,16 @@
                 document.getElementById("editTaskActualTime").value = data.actualTime || "";
                 document.getElementById("editTaskAssignedUser").value = data.assignedUserId || "";
 
-                // Modal anzeigen
                 new bootstrap.Modal(document.getElementById("editTaskModal")).show();
             });
     }
 
     /**
-     * Sammelt die Formulardaten und sendet sie an den Server (Create oder Edit).
+     * Validiert und sendet das Formular.
      */
-    function saveTask() {
+    function submitTaskForm() {
         const id = document.getElementById("editTaskId").value;
 
-        // Extraktion und Typumwandlung der Formulardaten für das Payload-Objekt
         const payload = {
             id: id ? parseInt(id) : 0,
             columnId: parseInt(document.getElementById("editTaskColumnId").value),
@@ -171,27 +159,21 @@
             assignedUserId: document.getElementById("editTaskAssignedUser").value || null
         };
 
-        // Client-seitige Validierung
         if (!payload.title) {
             alert("Bitte geben Sie einen Titel ein.");
             return;
         }
 
-        // Entscheidung ob POST an Create oder EditTask Endpunkt gesendet wird
         const url = id ? '/Task/EditTask' : '/Task/Create';
         const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
 
-        // Senden des Requests
         fetch(url, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "RequestVerificationToken": token
-            },
+            headers: { "Content-Type": "application/json", "RequestVerificationToken": token },
             body: JSON.stringify(payload)
         }).then(r => {
-            if(r.ok) location.reload(); // Seite neu laden bei Erfolg
-            else alert("Fehler beim Speichern der Daten.");
+            if(r.ok) location.reload();
+            else alert("Fehler beim Speichern.");
         });
     }
 </script>

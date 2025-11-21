@@ -1,12 +1,8 @@
 ﻿@model NeTec.Kanban.Domain.Entities.ViewModel.TaskDetailsViewModel
 
-
-
-
 @{
     ViewData["Title"] = Model.Title;
 
-    // Helper für Priority Badge (Soft-Look)
     var priorityClass = Model.Priority switch
     {
         "High" => "badge-soft-high",
@@ -27,12 +23,9 @@
     </nav>
 
     <div class="row">
-
         <div class="col-lg-8">
-
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <h1 class="fw-bold text-break">@Model.Title</h1>
-
                 <button class="btn btn-outline-secondary btn-edit-task" data-task-id="@Model.TaskId">
                     <i class="bi bi-pencil"></i> Bearbeiten
                 </button>
@@ -109,17 +102,16 @@
                     Details
                 </div>
                 <div class="card-body">
-
                     <div class="mb-3">
                         <label class="text-muted small fw-bold d-block">STATUS</label>
                         <span class="badge bg-light text-dark border">@Model.ColumnName</span>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="text-muted small fw-bold d-block">ZUSTÄNDIG</label>
                         <div class="d-flex align-items-center mt-1">
                             <i class="bi bi-person-circle fs-4 me-2 text-primary"></i>
-                            <span>@(!string.IsNullOrEmpty(Model.FullName) ? Model.FullName : Model.AssignedUserName)</span>
+                            <span>@Model.AssignedUserName</span>
                         </div>
                     </div>
 
@@ -152,7 +144,6 @@
                             var actual = Model.ActualTime ?? 0;
                             var percent = planned > 0 ? Math.Min((actual / planned) * 100, 100) : 0;
                         }
-
                         <div class="progress" style="height: 8px;">
                             <div class="progress-bar bg-info" role="progressbar" style="width: @((int)percent)%"></div>
                         </div>
@@ -171,7 +162,6 @@
                             <div>Aktualisiert: @Model.UpdatedAt.Value.ToString("g")</div>
                         }
                     </div>
-
                 </div>
             </div>
         </div>

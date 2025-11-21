@@ -15,7 +15,15 @@
 <body>
     @{
         var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
-        string ActiveClass(string controller) => string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+        var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
+
+        string ActiveClass(string controller, string action = null)
+        {
+            if (!string.IsNullOrEmpty(action) && !string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase))
+                return "";
+
+            return string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+        }
     }
 
     <header class="navbar navbar-light bg-white border-bottom shadow-sm px-3 sticky-top">
@@ -40,8 +48,13 @@
 
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link @ActiveClass("Board") @ActiveClass("Task")" asp-area="" asp-controller="Board" asp-action="Index">
+                        <a class="nav-link @ActiveClass("Board")" asp-area="" asp-controller="Board" asp-action="Index">
                             <i class="bi bi-kanban me-2"></i> Alle Boards
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @ActiveClass("Task", "MyTasks")" asp-area="" asp-controller="Task" asp-action="MyTasks">
+                            <i class="bi bi-check2-square me-2"></i> Meine Aufgaben
                         </a>
                     </li>
 
@@ -51,7 +64,7 @@
                             <small class="text-uppercase text-muted fw-semibold ms-1 d-block mb-2 px-3" style="font-size:0.75rem;">Verwaltung</small>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link @ActiveClass("Admin") text-danger" asp-area="Admin" asp-controller="Home" asp-action="Index">
+                            <a class="nav-link @ActiveClass("Home") text-danger" asp-area="Admin" asp-controller="Home" asp-action="Index">
                                 <i class="bi bi-shield-lock me-2"></i> Benutzerverwaltung
                             </a>
                         </li>
@@ -66,7 +79,7 @@
     </div>
 
     <footer class="text-center py-3 mt-auto border-top bg-white small text-muted">
-        &copy; @DateTime.Now.Year - NeTec Kanban WebApp
+        &copy; @DateTime.Now.Year - NeTec Kanban WebApp - IHK Abschlussprojekt
     </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
@@ -83,6 +96,7 @@
                 "closeButton": true
             };
 
+            // Verarbeitung von Server-Nachrichten aus TempData
             var successMessage = '@(TempData["SuccessMessage"] as string)';
             if (successMessage) toastr.success(successMessage);
 
