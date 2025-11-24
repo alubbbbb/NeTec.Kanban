@@ -96,9 +96,13 @@
                 new bootstrap.Modal(document.getElementById("editTaskModal")).show();
             }
 
-            // Bearbeiten
+            // Bearbeiten (HIER IST DER FIX DRIN)
             const btnEdit = e.target.closest('.btn-edit-task');
             if (btnEdit) {
+                // Verhindert, dass der Klick durchschlägt und die Detailseite öffnet
+                e.stopPropagation();
+                e.preventDefault();
+
                 fetchTaskDetails(btnEdit.dataset.taskId);
             }
         });

@@ -43,6 +43,7 @@ namespace NeTec.Kanban.Web.Controllers
                 .Where(t => t.UserId == userId)
                 .OrderBy(t => t.DueDate)
                 .AsNoTracking()
+                .OrderBy(t => t.DueDate)
                 .ToListAsync();
 
             return View(myTasks);
@@ -142,15 +143,22 @@ namespace NeTec.Kanban.Web.Controllers
             var userId = _userManager.GetUserId(User);
             if (userId == null) return Redirect("/Identity/Account/Login");
 
-            // Sicherheitsprüfung: Nur Owner darf löschen (Assignee darf nur bearbeiten)
             var task = await _context.TaskItems
                 .Include(t => t.Column).ThenInclude(c => c.Board)
-                .FirstOrDefaultAsync(t => t.Id == id && t.Column.Board.UserId == userId);
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null) return NotFound();
 
+            bool isAuthorized = task.Column.Board.UserId == userId || task.UserId == userId;
+
+            if (!isAuthorized)
+            {
+                return Unauthorized();
+            }
+
             int boardId = task.Column.BoardId;
             _context.TaskItems.Remove(task);
+            TempData["SuccessMessage"] = "Ticket gelöscht"; 
             await _context.SaveChangesAsync();
 
             return RedirectToAction("Details", "Board", new { id = boardId });
@@ -224,7 +232,6 @@ namespace NeTec.Kanban.Web.Controllers
             var userId = _userManager.GetUserId(User);
             if (userId == null) return Unauthorized();
 
-            // Zugriff: Owner ODER Assignee
             var t = await _context.TaskItems
                 .Include(x => x.Column).ThenInclude(c => c.Board)
                 .FirstOrDefaultAsync(x => x.Id == req.Id && (x.Column.Board.UserId == userId || x.UserId == userId));
