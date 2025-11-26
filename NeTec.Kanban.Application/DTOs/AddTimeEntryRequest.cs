@@ -1,4 +1,5 @@
-﻿public class AddTimeEntryRequest
+﻿namespace NeTec.Kanban.Application.DTOs;
+public class AddTimeEntryRequest
 {
     public int TaskId { get; set; }
     public decimal HoursSpent { get; set; }

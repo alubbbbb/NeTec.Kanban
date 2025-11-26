@@ -85,8 +85,9 @@
                     {
                         var priorityClass = task.Priority switch { "High" => "badge-soft-high", "Medium" => "badge-soft-medium", "Low" => "badge-soft-low", _ => "bg-secondary" };
 
-                        // Berechtigung prüfen
-                        bool canDelete = isBoardOwner || (task.UserId == currentUserId);
+                        // BERECHTIGUNG: Darf ich diesen Task bearbeiten/löschen?
+                        // JA, wenn ich Board-Owner bin ODER wenn der Task mir zugewiesen ist.
+                        bool canManage = isBoardOwner || (task.UserId == currentUserId);
 
                         <div class="card task-card mb-2 border-0 shadow-sm" data-task-id="@task.Id">
                             <div class="card-body p-3 position-relative">
@@ -98,15 +99,16 @@
                                     </h6>
 
                                     <div class="task-actions d-flex gap-1 position-relative" style="z-index: 2;">
-                                        <button class="btn btn-sm btn-light text-primary btn-edit-task p-0 d-flex align-items-center justify-content-center"
-                                                style="width: 24px; height: 24px;"
-                                                data-task-id="@task.Id"
-                                                title="Bearbeiten">
-                                            <i class="bi bi-pencil-fill" style="font-size: 0.7rem;"></i>
-                                        </button>
 
-                                        @if (canDelete)
+                                        @if (canManage)
                                         {
+                                            <button class="btn btn-sm btn-light text-primary btn-edit-task p-0 d-flex align-items-center justify-content-center"
+                                                    style="width: 24px; height: 24px;"
+                                                    data-task-id="@task.Id"
+                                                    title="Bearbeiten">
+                                                <i class="bi bi-pencil-fill" style="font-size: 0.7rem;"></i>
+                                            </button>
+
                                             <button type="button"
                                                     class="btn btn-sm btn-light text-danger btn-delete-task p-0 d-flex align-items-center justify-content-center"
                                                     style="width: 24px; height: 24px;"
@@ -124,9 +126,7 @@
                                     @if (task.AssignedTo != null)
                                     {
                                         var displayName = !string.IsNullOrEmpty(task.AssignedTo.FullName) ? task.AssignedTo.FullName : task.AssignedTo.UserName;
-                                        <div class="rounded-circle bg-dark text-white d-flex justify-content-center align-items-center shadow-sm"
-                                             style="width: 24px; height: 24px; font-size: 10px;"
-                                             title="@displayName">
+                                        <div class="rounded-circle bg-dark text-white d-flex justify-content-center align-items-center shadow-sm" style="width: 24px; height: 24px; font-size: 10px;" title="@displayName">
                                             @displayName.Substring(0, 1).ToUpper()
                                         </div>
                                     }

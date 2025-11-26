@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NeTec.Kanban.Domain.Entities;
+using NeTec.Kanban.Application.DTOs;
+using System;
 
 namespace NeTec.Kanban.Web.Areas.Controllers
 {
@@ -29,9 +31,23 @@ namespace NeTec.Kanban.Web.Areas.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            // Abruf aller Benutzer ohne Tracking (Read-Only Optimierung)
             var users = await _userManager.Users.AsNoTracking().ToListAsync();
-            return View(users);
+            var model = new List<UserListDto>();
+
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+
+                model.Add(new UserListDto
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    FullName = user.FullName ?? user.UserName,
+                    Role = roles.FirstOrDefault() ?? "User"
+                });
+            }
+
+            return View(model);
         }
 
         /// <summary>
@@ -87,7 +103,7 @@ namespace NeTec.Kanban.Web.Areas.Controllers
                 UserName = email,
                 Email = email,
                 FullName = fullName,
-                EmailConfirmed = true, // Admin hat ihn angelegt, also vertrauen wir
+                EmailConfirmed = true, 
                 CreatedAt = DateTime.UtcNow
             };
 

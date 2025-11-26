@@ -1,5 +1,4 @@
-﻿namespace NeTec.Kanban.Web.Models.DTOs // Angepasst auf DTO Namespace
-{
+﻿namespace NeTec.Kanban.Application.DTOs;
     /// <summary>
     /// Datentransferobjekt für die API-Ausgabe von Boards.
     /// Reduziert die Datenmenge und verhindert Zirkelbezüge bei der Serialisierung.
@@ -12,4 +11,3 @@
         public int AnzahlAufgaben { get; set; }
         public DateTime ErstelltAm { get; set; }
     }
-}

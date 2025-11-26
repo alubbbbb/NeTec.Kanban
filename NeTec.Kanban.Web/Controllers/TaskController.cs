@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using NeTec.Kanban.Domain.Entities;
 using NeTec.Kanban.Domain.Entities.ViewModel;
 using NeTec.Kanban.Infrastructure.Data;
-using NeTec.Kanban.Web.Models.DTOs;
+using NeTec.Kanban.Application.DTOs;
 
 namespace NeTec.Kanban.Web.Controllers
 {
@@ -171,8 +171,15 @@ namespace NeTec.Kanban.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTask(int id)
         {
-            var t = await _context.TaskItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
-            if (t == null) return NotFound();
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Unauthorized();
+
+            var t = await _context.TaskItems
+                .Include(t => t.Column).ThenInclude(c => c.Board)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id && (x.Column.Board.UserId == userId || x.UserId == userId));
+
+            if (t == null) return NotFound(); // Wenn keine Berechtigung -> Nicht gefunden
 
             return Json(new
             {

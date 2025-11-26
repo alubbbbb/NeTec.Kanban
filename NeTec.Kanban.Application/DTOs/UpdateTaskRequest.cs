@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace NeTec.Kanban.Web.Models.DTOs
+namespace NeTec.Kanban.Application.DTOs
 {
     /// <summary>
     /// DTO für Drag & Drop Operationen von Aufgaben.

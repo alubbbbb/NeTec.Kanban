@@ -88,7 +88,6 @@
      */
     function initializeModalEvents() {
         document.body.addEventListener('click', e => {
-            // Neu erstellen
             const btnAdd = e.target.closest('.btn-add-task');
             if (btnAdd) {
                 resetModalForm();
@@ -96,10 +95,8 @@
                 new bootstrap.Modal(document.getElementById("editTaskModal")).show();
             }
 
-            // Bearbeiten (HIER IST DER FIX DRIN)
             const btnEdit = e.target.closest('.btn-edit-task');
             if (btnEdit) {
-                // Verhindert, dass der Klick durchschlägt und die Detailseite öffnet
                 e.stopPropagation();
                 e.preventDefault();
 

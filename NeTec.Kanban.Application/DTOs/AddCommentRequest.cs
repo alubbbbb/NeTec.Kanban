@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace NeTec.Kanban.Web.Models.DTOs
+namespace NeTec.Kanban.Application.DTOs
 {
     /// <summary>
     /// DTO zum Hinzufügen eines Kommentars via API.

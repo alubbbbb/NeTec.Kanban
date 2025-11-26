@@ -6,7 +6,7 @@ using Moq;
 using NeTec.Kanban.Domain.Entities;
 using NeTec.Kanban.Infrastructure.Data;
 using NeTec.Kanban.Web.Controllers;
-using NeTec.Kanban.Web.Models.DTOs;
+using NeTec.Kanban.Application.DTOs;
 using System.Security.Claims;
 using Xunit;
 
