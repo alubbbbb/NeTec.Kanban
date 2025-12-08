@@ -22,11 +22,6 @@ namespace NeTec.Kanban.Web.Controllers
             _context = context;
             _userManager = userManager;
         }
-
-        // ============================================================
-        // VIEWS & DASHBOARDS
-        // ============================================================
-
         /// <summary>
         /// Zeigt ein Dashboard aller Aufgaben an, die dem aktuellen Benutzer zugewiesen sind.
         /// Diese Ansicht aggregiert Aufgaben über alle Boards hinweg.
@@ -179,7 +174,7 @@ namespace NeTec.Kanban.Web.Controllers
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id && (x.Column.Board.UserId == userId || x.UserId == userId));
 
-            if (t == null) return NotFound(); // Wenn keine Berechtigung -> Nicht gefunden
+            if (t == null) return NotFound(); 
 
             return Json(new
             {
@@ -202,7 +197,7 @@ namespace NeTec.Kanban.Web.Controllers
             if (userId == null) return Unauthorized();
             if (string.IsNullOrWhiteSpace(req.Title)) return BadRequest("Titel fehlt.");
 
-            // Prüfen, ob User Zugriff auf das Board hat
+            
             var column = await _context.Columns
                 .Include(c => c.Board)
                 .FirstOrDefaultAsync(c => c.Id == req.ColumnId && c.Board!.UserId == userId);
