@@ -1,0 +1,171 @@
+﻿@model NeTec.Kanban.Domain.Entities.ViewModel.TaskDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Title;
+
+    var priorityClass = Model.Priority switch
+    {
+        "High" => "badge-soft-high",
+        "Medium" => "badge-soft-medium",
+        "Low" => "badge-soft-low",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container-fluid py-4 ps-lg-5" style="max-width: 1400px;">
+
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a asp-controller="Board" asp-action="Index" class="text-decoration-none text-muted">Boards</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Board" asp-action="Details" asp-route-id="@Model.BoardId" class="text-decoration-none text-muted">Board Ansicht</a></li>
+            <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">TASK-@Model.TaskId</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <h1 class="fw-bold text-break">@Model.Title</h1>
+                <button class="btn btn-outline-secondary btn-edit-task" data-task-id="@Model.TaskId">
+                    <i class="bi bi-pencil"></i> Bearbeiten
+                </button>
+            </div>
+
+            <div class="mb-5">
+                <h5 class="fw-bold text-muted mb-3">Beschreibung</h5>
+                <div class="p-3 bg-light border rounded" style="min-height: 100px; white-space: pre-wrap;">
+                    @if (!string.IsNullOrWhiteSpace(Model.Description))
+                    {
+                        @Model.Description
+                    }
+                    else
+                    {
+                        <span class="text-muted fst-italic">Keine Beschreibung vorhanden.</span>
+                    }
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h5 class="fw-bold text-muted mb-3">
+                    <i class="bi bi-chat-left-text"></i> Kommentare (@Model.Comments.Count)
+                </h5>
+
+                <div class="comment-list mb-4">
+                    @foreach (var comment in Model.Comments)
+                    {
+                        <div class="d-flex mb-3">
+                            <div class="flex-shrink-0">
+                                <div class="bg-secondary text-white rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                                    @comment.UserName.Substring(0, 1).ToUpper()
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="bg-white border rounded p-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <strong class="small">@comment.UserName</strong>
+                                        <span class="text-muted small">@comment.CreatedAt.ToString("g")</span>
+                                    </div>
+                                    <p class="mb-0 text-break">@comment.Text</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!Model.Comments.Any())
+                    {
+                        <p class="text-muted">Noch keine Kommentare.</p>
+                    }
+                </div>
+
+                <div class="card bg-light border-0">
+                    <div class="card-body">
+                        <form asp-action="AddComment" asp-controller="Task" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="taskId" value="@Model.TaskId" />
+
+                            <div class="mb-2">
+                                <label class="form-label fw-bold small">Kommentar schreiben</label>
+                                <textarea name="text" class="form-control w-100" rows="3" placeholder="Was gibt es Neues?" style="resize: vertical;" required></textarea>
+                            </div>
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary btn-sm fw-bold px-3">Senden</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold border-bottom">
+                    Details
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted small fw-bold d-block">STATUS</label>
+                        <span class="badge bg-light text-dark border">@Model.ColumnName</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted small fw-bold d-block">ZUSTÄNDIG</label>
+                        <div class="d-flex align-items-center mt-1">
+                            <i class="bi bi-person-circle fs-4 me-2 text-primary"></i>
+                            <span>@Model.AssignedUserName</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted small fw-bold d-block">PRIORITÄT</label>
+                        <span class="badge @priorityClass mt-1">@Model.Priority</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted small fw-bold d-block">FÄLLIGKEITSDATUM</label>
+                        @if (Model.DueDate.HasValue)
+                        {
+                            var dateColor = Model.DueDate.Value < DateTime.Now ? "text-danger" : "text-dark";
+                            <span class="@dateColor mt-1 d-block">
+                                <i class="bi bi-calendar-event me-1"></i> @Model.DueDate.Value.ToString("d")
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic mt-1 d-block">Kein Datum</span>
+                        }
+                    </div>
+
+                    <hr />
+
+                    <div class="mb-3">
+                        <label class="text-muted small fw-bold d-block mb-1">ZEITERFASSUNG</label>
+                        @{
+                            var planned = Model.PlannedTime ?? 0;
+                            var actual = Model.ActualTime ?? 0;
+                            var percent = planned > 0 ? Math.Min((actual / planned) * 100, 100) : 0;
+                        }
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: @((int)percent)%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between small mt-1 text-muted">
+                            <span>@actual h verbraucht</span>
+                            <span>@planned h geplant</span>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <div class="small text-muted">
+                        <div>Erstellt: @Model.CreatedAt.ToString("g")</div>
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <div>Aktualisiert: @Model.UpdatedAt.Value.ToString("g")</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_TaskModal" />

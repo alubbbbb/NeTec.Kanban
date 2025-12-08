@@ -1,9 +1,11 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NeTec.Kanban.Domain.Entities
 {
+    /// <summary>
+    /// Repräsentiert einen Zeiterfassungs-Eintrag für eine Aufgabe.
+    /// </summary>
     public class TimeTracking
     {
         [Key]
@@ -15,7 +17,10 @@ namespace NeTec.Kanban.Domain.Entities
         [Required]
         public string UserId { get; set; } = null!;
 
-        [Range(0.01, 500, ErrorMessage = "Mindestens 0.01 Stunden, maximal 500 Stunden.")]
+        /// <summary>
+        /// Die erfasste Zeit in Stunden (z.B. 1.5 für 1h 30min).
+        /// </summary>
+        [Range(0.01, 100, ErrorMessage = "Bitte einen gültigen Wert zwischen 0.01 und 100 Stunden eingeben.")]
         [Column(TypeName = "decimal(8,2)")]
         public decimal HoursSpent { get; set; }
 

@@ -1,0 +1,180 @@
+﻿<div class="modal fade" id="editTaskModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Aufgabe bearbeiten</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="editTaskId" />
+                <input type="hidden" id="editTaskColumnId" />
+
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-muted">TITEL</label>
+                        <input id="editTaskTitle" class="form-control fw-bold" placeholder="Titel der Aufgabe" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">PRIORITÄT</label>
+                        <select id="editTaskPriority" class="form-select">
+                            <option value="Low">Niedrig</option>
+                            <option value="Medium">Mittel</option>
+                            <option value="High">Hoch</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">ZUSTÄNDIG</label>
+                        <select id="editTaskAssignedUser" class="form-select">
+                            <option value="">-- Niemand --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-muted">BESCHREIBUNG</label>
+                        <textarea id="editTaskDescription" class="form-control" rows="4"></textarea>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">FÄLLIG AM</label>
+                        <input type="date" id="editTaskDueDate" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">GEPLANT (H)</label>
+                        <input type="number" step="0.5" id="editTaskPlannedTime" class="form-control" placeholder="0.0" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">IST / VERBRAUCHT (H)</label>
+                        <input type="number" step="0.5" id="editTaskActualTime" class="form-control" placeholder="0.0" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 pt-0">
+                <button class="btn btn-light text-muted" data-bs-dismiss="modal">Abbrechen</button>
+                <button class="btn btn-primary fw-bold px-4" id="saveTaskChanges">Speichern</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    /**
+     * Initialisierung: Lädt Benutzerdaten und registriert Events.
+     */
+    document.addEventListener("DOMContentLoaded", () => {
+        loadUsersAsync();
+        initializeModalEvents();
+    });
+
+    /**
+     * Lädt die Benutzerliste für das Zuweisungs-Dropdown vom Server.
+     */
+    function loadUsersAsync() {
+        fetch('/Task/GetAssignableUsers')
+            .then(r => r.json())
+            .then(users => {
+                const select = document.getElementById("editTaskAssignedUser");
+                select.innerHTML = '<option value="">-- Niemand --</option>';
+                users.forEach(u => {
+                    select.innerHTML += `<option value="${u.id}">${u.userName}</option>`;
+                });
+            });
+    }
+
+    /**
+     * Registriert Klick-Events für "Neu" und "Bearbeiten" (Event Delegation).
+     */
+    function initializeModalEvents() {
+        document.body.addEventListener('click', e => {
+            const btnAdd = e.target.closest('.btn-add-task');
+            if (btnAdd) {
+                resetModalForm();
+                document.getElementById("editTaskColumnId").value = btnAdd.dataset.columnId;
+                new bootstrap.Modal(document.getElementById("editTaskModal")).show();
+            }
+
+            const btnEdit = e.target.closest('.btn-edit-task');
+            if (btnEdit) {
+                e.stopPropagation();
+                e.preventDefault();
+
+                fetchTaskDetails(btnEdit.dataset.taskId);
+            }
+        });
+
+        document.getElementById("saveTaskChanges").addEventListener("click", submitTaskForm);
+    }
+
+    /**
+     * Setzt das Formular zurück.
+     */
+    function resetModalForm() {
+        document.getElementById("editTaskId").value = "";
+        document.getElementById("editTaskTitle").value = "";
+        document.getElementById("editTaskDescription").value = "";
+        document.getElementById("editTaskPriority").value = "Medium";
+        document.getElementById("editTaskDueDate").value = "";
+        document.getElementById("editTaskPlannedTime").value = "";
+        document.getElementById("editTaskActualTime").value = "";
+        document.getElementById("editTaskAssignedUser").value = "";
+    }
+
+    /**
+     * Lädt Task-Daten und öffnet das Modal.
+     */
+    function fetchTaskDetails(id) {
+        fetch('/Task/GetTask/' + id)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById("editTaskId").value = data.id;
+                document.getElementById("editTaskColumnId").value = data.columnId;
+                document.getElementById("editTaskTitle").value = data.title;
+                document.getElementById("editTaskDescription").value = data.description || "";
+                document.getElementById("editTaskPriority").value = data.priority || "Medium";
+                document.getElementById("editTaskDueDate").value = data.dueDate || "";
+                document.getElementById("editTaskPlannedTime").value = data.plannedTime || "";
+                document.getElementById("editTaskActualTime").value = data.actualTime || "";
+                document.getElementById("editTaskAssignedUser").value = data.assignedUserId || "";
+
+                new bootstrap.Modal(document.getElementById("editTaskModal")).show();
+            });
+    }
+
+    /**
+     * Validiert und sendet das Formular.
+     */
+    function submitTaskForm() {
+        const id = document.getElementById("editTaskId").value;
+
+        const payload = {
+            id: id ? parseInt(id) : 0,
+            columnId: parseInt(document.getElementById("editTaskColumnId").value),
+            title: document.getElementById("editTaskTitle").value,
+            description: document.getElementById("editTaskDescription").value,
+            priority: document.getElementById("editTaskPriority").value,
+            dueDate: document.getElementById("editTaskDueDate").value || null,
+            plannedTime: parseFloat(document.getElementById("editTaskPlannedTime").value) || null,
+            actualTime: parseFloat(document.getElementById("editTaskActualTime").value) || null,
+            assignedUserId: document.getElementById("editTaskAssignedUser").value || null
+        };
+
+        if (!payload.title) {
+            alert("Bitte geben Sie einen Titel ein.");
+            return;
+        }
+
+        const url = id ? '/Task/EditTask' : '/Task/Create';
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "RequestVerificationToken": token },
+            body: JSON.stringify(payload)
+        }).then(r => {
+            if(r.ok) location.reload();
+            else alert("Fehler beim Speichern.");
+        });
+    }
+</script>

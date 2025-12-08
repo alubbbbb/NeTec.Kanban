@@ -1,10 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NeTec.Kanban.Domain.Entities
 {
+    /// <summary>
+    /// Repräsentiert eine einzelne Aufgabe (Ticket) im System.
+    /// Enthält alle fachlichen Daten sowie Verknüpfungen zu Status (Spalte) und Bearbeiter.
+    /// </summary>
     public class TaskItem
     {
         [Key]
@@ -13,40 +15,51 @@ namespace NeTec.Kanban.Domain.Entities
         [Required]
         public int ColumnId { get; set; }
 
+        /// <summary>
+        /// ID des zugewiesenen Benutzers (kann null sein, wenn Aufgabe unzugewiesen ist).
+        /// </summary>
         public string? UserId { get; set; }
 
-        [Required(ErrorMessage = "Der Aufgaben-Titel ist erforderlich.")]
-        [StringLength(150, ErrorMessage = "Maximal 150 Zeichen.")]
+        [Required(ErrorMessage = "Der Titel ist erforderlich.")]
+        [StringLength(150, ErrorMessage = "Der Titel darf maximal 150 Zeichen lang sein.")]
         public string Title { get; set; } = null!;
 
-        [StringLength(2000, ErrorMessage = "Maximal 2000 Zeichen.")]
+        [StringLength(2000)]
         public string? Description { get; set; }
 
-        [Required(ErrorMessage = "Die Priorität ist erforderlich.")]
-        [StringLength(20, ErrorMessage = "Maximal 20 Zeichen.")]
+        [Required]
+        [StringLength(20)]
         public string Priority { get; set; } = "Medium";
 
-        [Range(0, 500, ErrorMessage = "Schätzwert muss zwischen 0 und 500 Stunden liegen.")]
+        // Zeiterfassung (Dezimal für Stunden, z.B. 1.5h)
+        [Range(0, 1000)]
         [Column(TypeName = "decimal(8,2)")]
         public decimal? EstimatedHours { get; set; }
 
-        [Range(0, 500, ErrorMessage = "Schätzwert muss zwischen 0 und 500 Stunden liegen.")]
+        [Range(0, 1000)]
         [Column(TypeName = "decimal(8,2)")]
         public decimal? RemainingHours { get; set; }
 
-        [DataType(DataType.DateTime)]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [DataType(DataType.Date)]
+        public DateTime? DueDate { get; set; }
 
-        [DataType(DataType.DateTime)]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
+        /// <summary>
+        /// Sortierreihenfolge innerhalb der Spalte (für Drag & Drop).
+        /// </summary>
+        public int OrderIndex { get; set; } = 0;
+
+        // Navigation Properties
         [ForeignKey(nameof(ColumnId))]
         public Column? Column { get; set; }
 
         [ForeignKey(nameof(UserId))]
         public ApplicationUser? AssignedTo { get; set; }
 
-        public ICollection<Comment>? Comments { get; set; }
-        public ICollection<TimeTracking>? TimeTrackings { get; set; }
+        public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+
+        public ICollection<TimeTracking> TimeTrackings { get; set; } = new List<TimeTracking>();
     }
 }

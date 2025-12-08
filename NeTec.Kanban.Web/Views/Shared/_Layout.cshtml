@@ -1,54 +1,110 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - NeTec.Kanban.Web</title>
+    <title>@ViewData["Title"] - NeTec Kanban</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/NeTec.Kanban.Web.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">NeTec.Kanban.Web</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Boards" asp-action="Index">Boards</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                    <partial name="_LoginPartial" />
+    @{
+        var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
+        var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
 
-                </div>
+        string ActiveClass(string controller, string action = null)
+        {
+            if (!string.IsNullOrEmpty(action) && !string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase))
+                return "";
+
+            return string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+        }
+    }
+
+    <header class="navbar navbar-light bg-white border-bottom shadow-sm px-3 sticky-top">
+        <div class="container-fluid d-flex align-items-center justify-content-between">
+            <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Board" asp-action="Index">
+                <img src="~/img/logo.png" alt="NeTec Logo" class="logo-img" />
+                <span class="ms-2 fw-semibold text-dark d-none d-sm-inline">NeTec Kanban</span>
+            </a>
+
+            <partial name="_LoginPartial" />
+        </div>
+    </header>
+
+    <div class="d-flex wrapper">
+        <nav class="sidebar bg-white border-end">
+            <div class="p-3 position-sticky" style="top: 80px;">
+                <div class="fw-bold fs-5 mb-3 px-3">NeTec</div>
+
+                <small class="text-uppercase text-muted fw-semibold ms-1 d-block mb-2 px-3" style="font-size:0.75rem;">
+                    Navigation
+                </small>
+
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link @ActiveClass("Board")" asp-area="" asp-controller="Board" asp-action="Index">
+                            <i class="bi bi-kanban me-2"></i> Alle Boards
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @ActiveClass("Task", "MyTasks")" asp-area="" asp-controller="Task" asp-action="MyTasks">
+                            <i class="bi bi-check2-square me-2"></i> Meine Aufgaben
+                        </a>
+                    </li>
+
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <li class="nav-item mt-3">
+                            <small class="text-uppercase text-muted fw-semibold ms-1 d-block mb-2 px-3" style="font-size:0.75rem;">Verwaltung</small>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @ActiveClass("Home") text-danger" asp-area="Admin" asp-controller="Home" asp-action="Index">
+                                <i class="bi bi-shield-lock me-2"></i> Benutzerverwaltung
+                            </a>
+                        </li>
+                    }
+                </ul>
             </div>
         </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+
+        <main class="main-content flex-grow-1 p-4 bg-light">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - NeTec.Kanban.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
+    <footer class="text-center py-3 mt-auto border-top bg-white small text-muted">
+        &copy; @DateTime.Now.Year - NeTec Kanban WebApp - IHK Abschlussprojekt
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            toastr.options = {
+                "positionClass": "toast-bottom-right",
+                "preventDuplicates": true,
+                "progressBar": true,
+                "timeOut": 5000,
+                "closeButton": true
+            };
+
+            // Verarbeitung von Server-Nachrichten aus TempData
+            var successMessage = '@(TempData["SuccessMessage"] as string)';
+            if (successMessage) toastr.success(successMessage);
+
+            var errorMessage = '@(TempData["ErrorMessage"] as string)';
+            if (errorMessage) toastr.error(errorMessage);
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

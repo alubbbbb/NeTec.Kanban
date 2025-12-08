@@ -1,22 +1,285 @@
-html {
-  font-size: 14px;
-}
+﻿/* =============================
+   🌼 NeTec Kanban – Finales Design
+   ============================= */
 
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
+/* ==== GLOBAL ==== */
 body {
-  margin-bottom: 60px;
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    color: #212529;
 }
+
+/* ==== SIDEBAR ==== */
+.sidebar {
+    background-color: #fff;
+    border-right: 1px solid #e9ecef;
+    min-height: 100vh;
+    padding: 1rem 0;
+}
+
+    .sidebar .nav-link {
+        color: #343a40;
+        padding: 0.6rem 1rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+
+        .sidebar .nav-link.active {
+            background-color: #fff3cd;
+            color: #212529;
+            font-weight: 600;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: #f8f9fa;
+        }
+
+
+/* ==== HEADER ==== */
+header.navbar {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e9ecef;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* =================================
+   BUTTON HIERARCHIE
+   ================================= */
+
+/* 1. Primärer Button (Hauptaktionen) */
+.btn-primary {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    color: #212529 !important;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+    .btn-primary:hover {
+        background-color: #ffca2c !important;
+        border-color: #ffca2c !important;
+        transform: translateY(-1px);
+    }
+
+/* 2. Sekundärer Button (alternative Aktionen) */
+.btn-secondary {
+    background-color: #e9ecef !important;
+    border-color: #e9ecef !important;
+    color: #212529 !important;
+    font-weight: 500;
+}
+
+    .btn-secondary:hover {
+        background-color: #dee2e6 !important;
+        border-color: #dee2e6 !important;
+    }
+
+/* 3. Tertiärer/Outline Button */
+.btn-outline-secondary {
+    background-color: transparent !important;
+    border-color: #ced4da !important;
+    color: #495057 !important;
+    font-weight: 500;
+}
+
+    .btn-outline-secondary:hover {
+        background-color: #f8f9fa !important;
+        border-color: #ced4da !important;
+        color: #212529 !important;
+    }
+
+
+/* ==== KANBAN BOARD LAYOUT ==== */
+.kanban-header {
+    padding: 0.8rem 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.board-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+.kanban-columns {
+    display: flex;
+    gap: 1.25rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+
+.column {
+    /* Intelligentes, flexibles Spalten-Layout */
+    flex: 1 1 320px;
+    min-width: 300px;
+    background-color: #f1f3f5;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    max-height: 75vh;
+}
+
+.column-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: #495057;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.task-list {
+    min-height: 100px;
+    overflow-y: auto;
+    flex-grow: 1;
+    padding: 0.75rem;
+}
+
+.task-card {
+    background-color: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    cursor: grab;
+}
+
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 12px rgba(0,0,0,0.1);
+        border-color: #dee2e6;
+    }
+/* ==== HEADER LOGO FIX & LOGOUT BUTTON ==== */
+
+/* Weist dem Logo eine feste, vernünftige Höhe zu */
+.logo-img {
+    height: 32px; 
+    width: auto;
+    object-fit: contain; 
+}
+
+/* Styling für den speziellen Logout-Button */
+.logout-btn {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+    color: #495057;
+    font-weight: 500;
+}
+
+    .logout-btn:hover {
+        background-color: #e9ecef;
+    }
+
+/* Schönerer Add-Task Button */
+.btn-add-task-ghost {
+    width: 100%;
+    background-color: transparent;
+    border: 2px dashed #dee2e6;
+    color: #6c757d;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
+    .btn-add-task-ghost:hover {
+        background-color: #e9ecef;
+        border-color: #adb5bd;
+        color: #495057;
+    }
+
+
+/* =========================================
+   TASK CARD ACTIONS (Ghost Pattern)
+   ========================================= */
+
+/* 1. Der Wrapper: Standardmäßig unsichtbar */
+.task-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* 2. Der Wrapper: Sichtbar, wenn man über die Karte hovert */
+.task-card:hover .task-actions {
+    opacity: 1;
+}
+
+/* 3. Mobile-Support: Auf Touchscreens immer anzeigen */
+@media (hover: none) {
+    .task-actions {
+        opacity: 1;
+    }
+}
+
+/* 4. Hover-Effekte für die Buttons selbst (wichtig für Feedback!) */
+.btn-edit-task:hover {
+    background-color: #cfe2ff !important; /* Hellblau */
+    color: #084298 !important;
+}
+
+.btn-delete-task:hover {
+    background-color: #f8d7da !important; /* Hellrot */
+    color: #842029 !important;
+}
+
+
+/* =========================================
+   BADGES & STYLING
+   ========================================= */
+.badge {
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 0.4em 0.8em;
+    border-radius: 6px;
+}
+
+/* High Priority: Zartes Rot mit dunkelroter Schrift */
+.badge-soft-high {
+    background-color: #ffe2e5;
+    color: #b02a37;
+}
+
+/* Medium Priority: Zartes Orange mit dunkelorangener Schrift */
+.badge-soft-medium {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Low Priority: Zartes Grün mit dunkelgrüner Schrift */
+.badge-soft-low {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+/* =========================================
+   SIDEBAR & SCROLLBAR
+   ========================================= */
+
+/* Sidebar Active State - Elegant statt Block */
+.sidebar .nav-link.active {
+    background-color: transparent !important;
+    color: #000 !important;
+    font-weight: 700;
+    border-left: 4px solid #ffc107;
+    padding-left: calc(1rem - 4px);
+    border-radius: 0;
+}
+
+/* Scrollbar Styling */
+.task-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.task-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.task-list::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+}
+
+    .task-list::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(0, 0, 0, 0.3);
+    }

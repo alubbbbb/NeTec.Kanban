@@ -1,0 +1,46 @@
+﻿@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Registrieren";
+    Layout = "/Views/Shared/_AuthLayout.cshtml";
+}
+
+<form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3 small text-center" role="alert"></div>
+
+    <div class="form-floating mb-3">
+        <input asp-for="Input.FullName" class="form-control" autocomplete="name" placeholder="Max Mustermann" />
+        <label asp-for="Input.FullName">Vollständiger Name</label>
+        <span asp-validation-for="Input.FullName" class="text-danger small"></span>
+    </div>
+
+    <div class="form-floating mb-3">
+        <input asp-for="Input.Email" class="form-control" autocomplete="username" placeholder="name@example.com" />
+        <label asp-for="Input.Email">E-Mail Adresse</label>
+        <span asp-validation-for="Input.Email" class="text-danger small"></span>
+    </div>
+
+    <div class="form-floating mb-3">
+        <input asp-for="Input.Password" class="form-control" autocomplete="new-password" placeholder="password" />
+        <label asp-for="Input.Password">Passwort</label>
+        <span asp-validation-for="Input.Password" class="text-danger small"></span>
+    </div>
+
+    <div class="form-floating mb-4">
+        <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" placeholder="password" />
+        <label asp-for="Input.ConfirmPassword">Passwort bestätigen</label>
+        <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
+    </div>
+
+    <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary mb-3">Konto erstellen</button>
+
+    <div class="text-center">
+        <span class="small text-muted">Bereits registriert?</span>
+        <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl" class="small fw-bold text-decoration-none text-dark">Hier anmelden</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

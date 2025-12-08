@@ -1,0 +1,209 @@
+﻿@model IEnumerable<NeTec.Kanban.Domain.Entities.Board>
+
+@{
+    ViewData["Title"] = "Meine Boards";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-dark">Meine Boards</h1>
+            <p class="text-muted small">Verwaltung der persönlichen Projekte und Aufgaben.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <form asp-action="Search" method="get" class="d-flex">
+                <input type="text" name="q" class="form-control me-2" placeholder="Board suchen..." value="@ViewData["SearchQuery"]">
+                <button type="submit" class="btn btn-light border"><i class="bi bi-search"></i></button>
+            </form>
+
+            <button type="button" class="btn btn-primary d-flex align-items-center shadow-sm" data-bs-toggle="modal" data-bs-target="#createBoardModal">
+                <i class="bi bi-plus-lg me-2"></i> Neues Board
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        @foreach (var item in Model)
+        {
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100 shadow-sm border-0 hover-effect position-relative">
+                    <div class="position-absolute start-0 top-0 bottom-0 bg-warning rounded-start" style="width: 5px;"></div>
+
+                    <div class="card-body ps-4 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title fw-bold text-truncate mb-0" style="max-width: 85%;">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none text-dark stretched-link">
+                                    @item.Titel
+                                </a>
+                            </h5>
+
+                            <div class="dropdown position-relative" style="z-index: 2;">
+                                <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                    <li>
+                                        <button type="button" class="dropdown-item" onclick="openEditModal(@item.Id, '@item.Titel', '@(item.Description ?? "")')">
+                                            <i class="bi bi-pencil me-2 text-primary"></i> Umbenennen
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button type="button" class="dropdown-item text-danger" onclick="openDeleteModal(@item.Id, '@item.Titel')">
+                                            <i class="bi bi-trash me-2"></i> Löschen
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center text-muted small mt-auto border-top border-light pt-2">
+                            <span title="Erstellungsdatum">
+                                <i class="bi bi-calendar3 me-1"></i> @item.CreatedAt.ToString("dd.MM.yyyy")
+                            </span>
+                            <span class="text-dark fw-bold small">Öffnen <i class="bi bi-arrow-right"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (!Model.Any())
+        {
+            <div class="col-12 text-center py-5">
+                <div class="text-muted mb-3 opacity-50">
+                    <i class="bi bi-kanban display-1"></i>
+                </div>
+                <h3 class="fw-bold">Keine Boards gefunden</h3>
+                <p class="text-muted">Beginnen Sie mit der Erstellung Ihres ersten Projekts.</p>
+                <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#createBoardModal">
+                    Erstes Board erstellen
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .hover-effect {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .hover-effect:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.1) !important;
+            z-index: 10; /* Hebt die Karte beim Hover hervor */
+            background-color: #fff;
+        }
+</style>
+
+<div class="modal fade" id="createBoardModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form asp-controller="Board" asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Neues Board</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">NAME DES BOARDS</label>
+                        <input name="Titel" class="form-control" placeholder="z.B. Marketing Projekt" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">BESCHREIBUNG</label>
+                        <textarea name="Description" class="form-control" rows="3" placeholder="Optionale Beschreibung..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light text-muted" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4">Erstellen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editBoardModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form id="editForm" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editBoardId" />
+
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Board bearbeiten</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">NAME</label>
+                        <input name="Titel" id="editTitel" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">BESCHREIBUNG</label>
+                        <textarea name="Description" id="editDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light text-muted" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteBoardModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title text-danger fw-bold">Board löschen?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Möchtest du das Board <strong id="boardNameToDelete" class="text-dark"></strong> wirklich unwiderruflich löschen?</p>
+                <p class="text-danger small fw-bold"><i class="bi bi-exclamation-triangle"></i> Alle enthaltenen Aufgaben und Spalten gehen verloren.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light text-muted" data-bs-dismiss="modal">Abbrechen</button>
+                <form id="deleteForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger fw-bold px-4">Ja, löschen</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Steuerung des Lösch-Modals
+        function openDeleteModal(boardId, boardTitle) {
+            var deleteModalEl = document.getElementById('deleteBoardModal');
+            if (deleteModalEl) {
+                deleteModalEl.querySelector('#boardNameToDelete').textContent = boardTitle;
+                // Dynamische URL-Generierung für die Lösch-Aktion
+                deleteModalEl.querySelector('#deleteForm').action = '/Board/Delete/' + boardId;
+                new bootstrap.Modal(deleteModalEl).show();
+            }
+        }
+
+        // Steuerung des Edit-Modals
+        function openEditModal(boardId, boardTitle, boardDescription) {
+            var editModalEl = document.getElementById('editBoardModal');
+            if (editModalEl) {
+                var form = editModalEl.querySelector('#editForm');
+                form.action = '/Board/Edit/' + boardId;
+
+                form.querySelector('#editTitel').value = boardTitle;
+                form.querySelector('#editBoardId').value = boardId;
+                form.querySelector('#editDescription').value = boardDescription || "";
+
+                new bootstrap.Modal(editModalEl).show();
+            }
+        }
+    </script>
+}

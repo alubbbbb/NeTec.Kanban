@@ -17,7 +17,7 @@ namespace NeTec.Kanban.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.4")
+                .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -36,8 +36,8 @@ namespace NeTec.Kanban.Infrastructure.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("NormalizedName")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
 
@@ -200,8 +200,7 @@ namespace NeTec.Kanban.Infrastructure.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.Property<string>("PasswordHash")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("nvarchar(max)");
@@ -291,7 +290,7 @@ namespace NeTec.Kanban.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BoardId");
+                    b.HasIndex("BoardId", "OrderIndex");
 
                     b.ToTable("Columns");
                 });
@@ -347,8 +346,14 @@ namespace NeTec.Kanban.Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal?>("EstimatedHours")
                         .HasColumnType("decimal(8,2)");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
 
                     b.Property<string>("Priority")
                         .IsRequired()
@@ -372,9 +377,9 @@ namespace NeTec.Kanban.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ColumnId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("ColumnId", "OrderIndex");
 
                     b.ToTable("TaskItems");
                 });
@@ -402,7 +407,6 @@ namespace NeTec.Kanban.Infrastructure.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
@@ -467,13 +471,13 @@ namespace NeTec.Kanban.Infrastructure.Migrations
 
             modelBuilder.Entity("NeTec.Kanban.Domain.Entities.Board", b =>
                 {
-                    b.HasOne("NeTec.Kanban.Domain.Entities.ApplicationUser", "User")
+                    b.HasOne("NeTec.Kanban.Domain.Entities.ApplicationUser", "Owner")
                         .WithMany("Boards")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("NeTec.Kanban.Domain.Entities.Column", b =>

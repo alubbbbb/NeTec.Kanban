@@ -1,48 +1,78 @@
-﻿/* Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
-for details on configuring this project to bundle and minify static web assets. */
+﻿/* =============================
+   LAYOUT STYLES (Scoped CSS)
+   Definiert das Aussehen von Header, Sidebar und globalen Layout-Elementen.
+   ============================= */
 
-a.navbar-brand {
-  white-space: normal;
-  text-align: center;
-  word-break: break-all;
+/* ==== HEADER / NAVBAR ==== */
+header.navbar {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e9ecef;
+    /* Subtiler Schatten für räumliche Trennung */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    z-index: 1030; /* Überlagert andere Inhalte beim Scrollen */
 }
 
-a {
-  color: #0077cc;
+.logo-img {
+    height: 32px;
+    width: auto;
+    object-fit: contain; /* Verhindert Verzerrung */
 }
 
-.btn-primary {
-  color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
+/* Spezifischer Style für den Logout-Button im Header */
+.logout-btn {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+    color: #495057;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
-.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
-  color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
+    .logout-btn:hover {
+        background-color: #e9ecef;
+        color: #212529;
+    }
+
+/* ==== SIDEBAR NAVIGATION ==== */
+.sidebar {
+    background-color: #fff;
+    border-right: 1px solid #e9ecef;
+    min-height: calc(100vh - 57px); /* Volle Höhe minus Header */
+    width: 250px; /* Feste Breite für Desktop */
+    flex-shrink: 0;
 }
 
-.border-top {
-  border-top: 1px solid #e5e5e5;
-}
-.border-bottom {
-  border-bottom: 1px solid #e5e5e5;
-}
+    .sidebar .nav-link {
+        color: #495057; /* Neutrales Grau */
+        padding: 0.75rem 1.5rem; /* Großzügige Klickfläche */
+        border-radius: 0 50px 50px 0; /* Runde Kante rechts für modernen Look */
+        transition: all 0.2s ease;
+        font-weight: 500;
+        margin-right: 1rem;
+        display: flex;
+        align-items: center;
+    }
 
-.box-shadow {
-  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
-}
+        .sidebar .nav-link:hover {
+            background-color: #f8f9fa;
+            color: #000;
+            transform: translateX(3px); /* Kleines visuelles Feedback */
+        }
 
-button.accept-policy {
-  font-size: 1rem;
-  line-height: inherit;
-}
+        /* Aktiver Menüpunkt: 
+    Zeichnet sich durch den gelben Corporate-Identity Streifen links aus.
+    Verzichtet auf Hintergrundfarbe für einen cleanen Look.
+*/
+        .sidebar .nav-link.active {
+            background-color: transparent;
+            color: #000;
+            font-weight: 700;
+            border-left: 4px solid #ffc107; /* IHK-Projekt Akzentfarbe */
+            padding-left: calc(1.5rem - 4px); /* Textausgleich für den Border */
+        }
 
-.footer {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  white-space: nowrap;
-  line-height: 60px;
+/* ==== RESPONSIVE ANPASSUNGEN ==== */
+@media (max-width: 768px) {
+    .sidebar {
+        display: none; /* Auf Mobile Sidebar ausblenden (oder Hamburger-Menü nutzen) */
+    }
 }

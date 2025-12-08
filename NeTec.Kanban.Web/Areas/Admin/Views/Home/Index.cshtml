@@ -1,0 +1,113 @@
+﻿@model IEnumerable<NeTec.Kanban.Application.DTOs.UserListDto>
+@{
+    ViewData["Title"] = "Benutzerverwaltung";
+}
+
+<div class="container-fluid py-4 ps-lg-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-0">Benutzerverwaltung</h1>
+            <p class="text-muted small mb-0">Übersicht aller registrierten Konten und Rollen.</p>
+        </div>
+        <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#createUserModal">
+            <i class="bi bi-person-plus-fill me-2"></i> Benutzer anlegen
+        </button>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 py-3 text-uppercase small fw-bold text-muted">Benutzer</th>
+                            <th class="py-3 text-uppercase small fw-bold text-muted">E-Mail</th>
+                            <th class="py-3 text-uppercase small fw-bold text-muted">Rolle</th>
+                            <th class="pe-4 py-3 text-end text-uppercase small fw-bold text-muted">Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3 fw-bold shadow-sm" style="width: 36px; height: 36px;">
+                                            @((user.FullName ?? user.Email).Substring(0, 1).ToUpper())
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">@(user.FullName ?? "Kein Name")</div>
+                                            <div class="small text-muted">ID: @user.Id.Substring(0, 8)...</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>@user.Email</td>
+                                <td>
+                                    @if (user.Role == "Admin" )
+                                    {
+                                        <span class="badge bg-dark">System Admin</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-dark border">User</span>
+                                    }
+                                </td>
+                                <td class="pe-4 text-end">
+                                    @if (user.Email != "admin@netec.de")
+                                    {
+                                        <form action="@Url.Action("DeleteUser", "Home", new { area = "Admin" })" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@user.Id" />
+                                            @Html.AntiForgeryToken()
+                                            <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Soll dieser Benutzer wirklich unwiderruflich gelöscht werden?');">
+                                                <i class="bi bi-trash me-1"></i> Löschen
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Neuen Benutzer anlegen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form action="@Url.Action("CreateUser", "Home", new { area = "Admin" })" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">VOLLSTÄNDIGER NAME</label>
+                        <input name="fullName" class="form-control" required placeholder="z.B. Max Mustermann" />
+                        <input name="id" hidden />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">E-MAIL ADRESSE</label>
+                        <input name="email" type="email" class="form-control" required placeholder="mitarbeiter@netec.de" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">START-PASSWORT</label>
+                        <input name="password" type="password" class="form-control" required value="Start123!" />
+                        <div class="form-text text-muted small">Der Benutzer sollte dieses Passwort nach dem ersten Login ändern.</div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="isAdminCheck" name="isAdmin" value="true">
+                        <label class="form-check-label small fw-bold" for="isAdminCheck">Soll Administrator sein?</label>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-light text-muted" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="submit" class="btn btn-primary fw-bold px-4">Anlegen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
